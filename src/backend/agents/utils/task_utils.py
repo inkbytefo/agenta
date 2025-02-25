@@ -1,10 +1,27 @@
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Type
 from enum import Enum
 import logging
+import re
+import ast
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
+from functools import lru_cache
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
+
+class TaskError(Exception):
+    """Base exception class for task-related errors"""
+    pass
+
+class ValidationError(TaskError):
+    """Exception raised for task validation errors"""
+    pass
+
+class SecurityError(TaskError):
+    """Exception raised for security-related errors"""
+    pass
+
 
 class TaskType(Enum):
     """Enumeration of different task types"""
@@ -29,7 +46,22 @@ class TaskDetector(ABC):
     @abstractmethod
     def detect_type(self, description: str) -> TaskType:
         """Detect task type from description"""
+        if not description:
+            raise ValidationError("Task description cannot be empty")
+        return self._analyze_description(description)
+    
+    @abstractmethod
+    def _analyze_description(self, description: str) -> TaskType:
+        """Analyze task description to determine type"""
         pass
+    
+    @staticmethod
+    def validate_description(description: str) -> None:
+        """Validate task description format and content"""
+        if not description or len(description.strip()) < 10:
+            raise ValidationError("Task description must be at least 10 characters")
+        if len(description) > 1000:
+            raise ValidationError("Task description is too long (max 1000 chars)")
 
 class TaskFormatter:
     """Utility class for formatting task descriptions and outputs"""
@@ -50,16 +82,51 @@ class TaskFormatter:
         return template.format(requirements=reqs_text).strip()
 
 class CodeTaskDetector(TaskDetector):
-    """Task type detector for code-related tasks"""
+    """Task type detector for code-related tasks with advanced pattern matching"""
     
-    MODIFICATION_KEYWORDS = ['modify', 'update', 'change', 'fix', 'refactor', 'improve']
+    TASK_PATTERNS = {
+        TaskType.CODE_MODIFICATION: [
+            (r'\b(modify|update|change|fix|refactor|improve)\b', 2),
+            (r'\b(bug|issue|error|problem)\b', 1),
+            (r'\b(optimization|performance|security)\b', 1)
+        ],
+        TaskType.CODE_CREATION: [
+            (r'\b(create|new|implement|add|build)\b', 2),
+            (r'\b(from scratch|initialize|start)\b', 1),
+            (r'\b(feature|functionality|component)\b', 1)
+        ]
+    }
     
-    def detect_type(self, description: str) -> TaskType:
-        """Detect if task is code modification or creation"""
-        description_lower = description.lower()
-        if any(keyword in description_lower for keyword in self.MODIFICATION_KEYWORDS):
-            return TaskType.CODE_MODIFICATION
-        return TaskType.CODE_CREATION
+    def __init__(self):
+        """Initialize with compiled regex patterns"""
+        super().__init__()
+        self._pattern_cache = {}
+        for task_type, patterns in self.TASK_PATTERNS.items():
+            self._pattern_cache[task_type] = [
+                (re.compile(pattern, re.IGNORECASE), weight)
+                for pattern, weight in patterns
+            ]
+    
+    @lru_cache(maxsize=1000)
+    def _analyze_description(self, description: str) -> TaskType:
+        """Analyze task description using weighted pattern matching"""
+        self.validate_description(description)
+        
+        scores = {task_type: 0 for task_type in TaskType}
+        for task_type, patterns in self._pattern_cache.items():
+            for pattern, weight in patterns:
+                matches = pattern.findall(description)
+                scores[task_type] += len(matches) * weight
+        
+        # Get task type with highest score or default to creation
+        max_score = max(scores.values())
+        if max_score == 0:
+            return TaskType.CODE_CREATION
+            
+        # If tie, prefer modification as it's more specific
+        max_types = [t for t, s in scores.items() if s == max_score]
+        return (TaskType.CODE_MODIFICATION if TaskType.CODE_MODIFICATION in max_types
+                else max_types[0])
 
 class TaskTemplateManager:
     """Manager for task templates"""
@@ -139,18 +206,62 @@ class ResponseFormatter:
         }
 
 class TaskValidationMixin:
-    """Mixin for task validation functionality"""
+    """Mixin for task validation functionality with enhanced security checks"""
     
-    @staticmethod
-    def validate_task_description(description: str) -> None:
-        """Validate task description"""
+    MAX_DESCRIPTION_LENGTH = 1000
+    MAX_OUTPUT_LENGTH = 5000
+    SECURITY_PATTERNS = [
+        r'rm\s+-rf',
+        r'system\s*\(',
+        r'exec\s*\(',
+        r'eval\s*\(',
+        r'__import__\s*\(',
+        r'subprocess\..*',
+        r'os\.(system|popen|spawn)',
+    ]
+    
+    @classmethod
+    def validate_task_description(cls, description: str) -> None:
+        """Validate task description with comprehensive checks"""
         if not description or not description.strip():
-            raise ValueError("Task description cannot be empty")
+            raise ValidationError("Task description cannot be empty")
         if len(description) < 10:
-            raise ValueError("Task description is too short")
-
-    @staticmethod
-    def validate_expected_output(output: str) -> None:
-        """Validate expected output"""
+            raise ValidationError("Task description is too short")
+        if len(description) > cls.MAX_DESCRIPTION_LENGTH:
+            raise ValidationError(f"Task description exceeds maximum length of {cls.MAX_DESCRIPTION_LENGTH}")
+            
+        # Check for potentially malicious patterns
+        cls._check_security_patterns(description)
+    
+    @classmethod
+    def validate_expected_output(cls, output: str) -> None:
+        """Validate expected output with comprehensive checks"""
         if not output or not output.strip():
-            raise ValueError("Expected output cannot be empty")
+            raise ValidationError("Expected output cannot be empty")
+        if len(output) > cls.MAX_OUTPUT_LENGTH:
+            raise ValidationError(f"Expected output exceeds maximum length of {cls.MAX_OUTPUT_LENGTH}")
+        
+        # Check for potentially malicious patterns
+        cls._check_security_patterns(output)
+    
+    @classmethod
+    def validate_code_output(cls, code: str) -> None:
+        """Validate code output for security and syntax"""
+        if not code or not code.strip():
+            raise ValidationError("Code output cannot be empty")
+            
+        # Check for potentially malicious patterns
+        cls._check_security_patterns(code)
+        
+        # Validate Python syntax
+        try:
+            ast.parse(code)
+        except SyntaxError as e:
+            raise ValidationError(f"Invalid Python syntax: {str(e)}")
+    
+    @classmethod
+    def _check_security_patterns(cls, content: str) -> None:
+        """Check content for potentially malicious patterns"""
+        for pattern in cls.SECURITY_PATTERNS:
+            if re.search(pattern, content, re.IGNORECASE):
+                raise SecurityError(f"Potentially unsafe pattern detected: {pattern}")

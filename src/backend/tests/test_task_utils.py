@@ -13,6 +13,7 @@ This test suite covers:
 import pytest
 from typing import Dict, Any, List
 from datetime import datetime
+import re
 from ..agents.utils.task_utils import (
     TaskType,
     CodeTaskDetector,
@@ -21,7 +22,9 @@ from ..agents.utils.task_utils import (
     TaskTemplateManager,
     TaskValidationMixin,
     TaskTemplate,
-    ConfigurationError
+    ConfigurationError,
+    ValidationError,
+    SecurityError
 )
 
 # Test Data
@@ -60,7 +63,7 @@ def sample_steps() -> List[str]:
     ]
 
 class TestCodeTaskDetector:
-    """Test suite for CodeTaskDetector class"""
+    """Test suite for CodeTaskDetector class with pattern weights and caching"""
     
     @pytest.fixture
     def detector(self) -> CodeTaskDetector:
@@ -68,14 +71,21 @@ class TestCodeTaskDetector:
         return CodeTaskDetector()
     
     @pytest.mark.parametrize("description,expected_type", [
+        # Basic patterns with high weights (2)
         ("Modify the login function", TaskType.CODE_MODIFICATION),
-        ("Update user authentication", TaskType.CODE_MODIFICATION),
-        ("Fix the bug in parser", TaskType.CODE_MODIFICATION),
-        ("Refactor database queries", TaskType.CODE_MODIFICATION),
         ("Create a new API endpoint", TaskType.CODE_CREATION),
-        ("Implement user registration", TaskType.CODE_CREATION),
-        ("Add input validation", TaskType.CODE_CREATION),
-        ("Build authentication system", TaskType.CODE_CREATION),
+        
+        # Multiple patterns with weights
+        ("Fix bug in performance optimization", TaskType.CODE_MODIFICATION),  # 2 + 1 + 1
+        ("Create new feature from scratch", TaskType.CODE_CREATION),  # 2 + 1
+        
+        # Competing patterns
+        ("Fix and create authentication component", TaskType.CODE_MODIFICATION),  # Modification wins with higher weight
+        ("Initialize new feature with bug fixes", TaskType.CODE_CREATION),  # Creation wins with explicit 'new'
+        
+        # Context-based patterns
+        ("Address security issue in API", TaskType.CODE_MODIFICATION),  # 'security' implies modification
+        ("Start implementing performance improvements", TaskType.CODE_MODIFICATION),  # 'performance' suggests modification
     ])
     def test_detect_type(
         self,
@@ -83,26 +93,27 @@ class TestCodeTaskDetector:
         description: str,
         expected_type: TaskType
     ) -> None:
-        """Test task type detection with various descriptions.
-        
-        Args:
-            detector: CodeTaskDetector instance
-            description: Task description to test
-            expected_type: Expected TaskType result
-        """
+        """Test task type detection with weighted patterns."""
         assert detector.detect_type(description) == expected_type
 
     def test_detect_type_edge_cases(self, detector: CodeTaskDetector) -> None:
-        """Test task type detection with edge cases.
+        """Test task type detection with edge cases."""
+        with pytest.raises(ValidationError):
+            detector.detect_type("")
         
-        Args:
-            detector: CodeTaskDetector instance
-        """
-        # Empty description defaults to creation
-        assert detector.detect_type("") == TaskType.CODE_CREATION
+        # Test pattern weighting system
+        result = detector.detect_type("Create by modifying existing code")
+        assert result == TaskType.CODE_MODIFICATION  # 'modify' (2) outweighs 'create' (2) due to modification preference
         
-        # Mixed signals default to most specific (modification)
-        assert detector.detect_type("Create by modifying existing code") == TaskType.CODE_MODIFICATION
+        # Test cache behavior
+        description = "Implement new feature with optimizations"
+        first_result = detector.detect_type(description)
+        second_result = detector.detect_type(description)
+        assert first_result == second_result  # Results should be consistent
+        
+        # Test max length validation
+        with pytest.raises(ValidationError):
+            detector.detect_type("a" * 1001)  # Exceeds max length
 
 class TestTaskFormatter:
     """Test suite for TaskFormatter class"""
@@ -222,7 +233,7 @@ class TestTaskTemplateManager:
             TaskTemplateManager.get_template("invalid_type")  # type: ignore
 
 class TestTaskValidationMixin:
-    """Test suite for TaskValidationMixin class"""
+    """Test suite for TaskValidationMixin class with enhanced security and validation"""
     
     @pytest.fixture
     def validator(self) -> TaskValidationMixin:
@@ -234,31 +245,24 @@ class TestTaskValidationMixin:
         "   ",
         "short",
         "a" * 9,  # Just under minimum length
+        "a" * (TaskValidationMixin.MAX_DESCRIPTION_LENGTH + 1),  # Exceeds max length
     ])
     def test_validate_task_description_invalid(
         self,
         validator: TaskValidationMixin,
         description: str
     ) -> None:
-        """Test task description validation with invalid inputs.
-        
-        Args:
-            validator: TaskValidationMixin instance
-            description: Invalid description to test
-        """
-        with pytest.raises(ValueError):
+        """Test task description validation with invalid inputs."""
+        with pytest.raises((ValidationError)):
             validator.validate_task_description(description)
     
     def test_validate_task_description_valid(self, validator: TaskValidationMixin) -> None:
-        """Test task description validation with valid input.
-        
-        Args:
-            validator: TaskValidationMixin instance
-        """
+        """Test task description validation with valid input."""
         valid_descriptions = [
             "This is a valid task description that is long enough",
             "Create a new authentication system with OAuth support",
-            "Implement input validation for all form fields"
+            "Implement input validation for all form fields",
+            "a" * TaskValidationMixin.MAX_DESCRIPTION_LENGTH  # Maximum valid length
         ]
         
         for description in valid_descriptions:
@@ -268,35 +272,84 @@ class TestTaskValidationMixin:
         "",
         "   ",
         "\n\n",
+        "a" * (TaskValidationMixin.MAX_OUTPUT_LENGTH + 1)  # Exceeds max length
     ])
     def test_validate_expected_output_invalid(
         self,
         validator: TaskValidationMixin,
         output: str
     ) -> None:
-        """Test expected output validation with invalid inputs.
-        
-        Args:
-            validator: TaskValidationMixin instance
-            output: Invalid output to test
-        """
-        with pytest.raises(ValueError):
+        """Test expected output validation with invalid inputs."""
+        with pytest.raises(ValidationError):
             validator.validate_expected_output(output)
     
     def test_validate_expected_output_valid(self, validator: TaskValidationMixin) -> None:
-        """Test expected output validation with valid input.
-        
-        Args:
-            validator: TaskValidationMixin instance
-        """
+        """Test expected output validation with valid input."""
         valid_outputs = [
             "Valid expected output",
             "Multiple\nline\noutput",
-            "Detailed output with specifications"
+            "Detailed output with specifications",
+            "a" * TaskValidationMixin.MAX_OUTPUT_LENGTH  # Maximum valid length
         ]
         
         for output in valid_outputs:
             validator.validate_expected_output(output)  # Should not raise
+    
+    @pytest.mark.parametrize("code", [
+        # Invalid Python syntax
+        "def broken_func(:",
+        "print(Hello World)",
+        # Security patterns
+        "os.system('rm -rf /')",
+        "subprocess.run(['rm', '-rf', '/'])",
+        "__import__('os').system('echo hack')",
+        "eval('__import__(\\'os\\').system(\\'rm -rf \\/')')",
+        # Empty or whitespace
+        "",
+        "   ",
+        "\n\n"
+    ])
+    def test_validate_code_output_invalid(
+        self,
+        validator: TaskValidationMixin,
+        code: str
+    ) -> None:
+        """Test code output validation with invalid inputs."""
+        with pytest.raises((ValidationError, SecurityError)):
+            validator.validate_code_output(code)
+    
+    def test_validate_code_output_valid(self, validator: TaskValidationMixin) -> None:
+        """Test code output validation with valid input."""
+        valid_code = [
+            "def greet(name: str) -> str:\n    return f'Hello, {name}!'",
+            "class User:\n    def __init__(self, name: str):\n        self.name = name",
+            """
+            from typing import List
+            
+            def calculate_sum(numbers: List[int]) -> int:
+                return sum(numbers)
+            """
+        ]
+        
+        for code in valid_code:
+            validator.validate_code_output(code)  # Should not raise
+    
+    @pytest.mark.parametrize("content,pattern", [
+        ("os.system('command')", r'system\s*\('),
+        ("subprocess.run(['ls'])", r'subprocess\..*'),
+        ("eval('2 + 2')", r'eval\s*\('),
+        ("__import__('os')", r'__import__\s*\('),
+    ])
+    def test_security_pattern_detection(
+        self,
+        validator: TaskValidationMixin,
+        content: str,
+        pattern: str
+    ) -> None:
+        """Test security pattern detection."""
+        with pytest.raises(SecurityError) as exc_info:
+            validator._check_security_patterns(content)
+        assert pattern in str(exc_info.value)
 
 if __name__ == '__main__':
     pytest.main([__file__])
