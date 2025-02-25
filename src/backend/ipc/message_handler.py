@@ -194,6 +194,16 @@ class MessageHandler:
         
         file_ops = self.prompt_agent.tools[0]  # Assuming FileOperations is the first tool
         
+        # Dynamically find the FileOperations tool
+        file_ops = None
+        for tool in self.prompt_agent.tools:
+            if isinstance(tool, FileOperations):
+                file_ops = tool
+                break
+
+        if file_ops is None:
+            return self._create_error_response("FileOperations tool not found")
+
         tool_mapping = {
             'read_file': file_ops.read_file,
             'create_file': file_ops.create_file,
