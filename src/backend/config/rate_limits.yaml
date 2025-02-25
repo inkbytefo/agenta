@@ -1,0 +1,54 @@
+# Rate limiting configuration for LLM API access
+# All limits are per minute unless specified otherwise
+
+# Global rate limits
+max_requests_per_minute: 60
+max_tokens_per_minute: 100000
+retry_attempts: 3
+retry_delay: 1.0  # seconds
+
+# Provider-specific rate limits
+providers:
+  openai:
+    max_requests_per_minute: 50
+    max_tokens_per_minute: 90000
+    retry_attempts: 3
+    retry_delay: 1.0
+    
+  anthropic:
+    max_requests_per_minute: 40
+    max_tokens_per_minute: 80000
+    retry_attempts: 3
+    retry_delay: 1.5
+    
+  google:
+    max_requests_per_minute: 45
+    max_tokens_per_minute: 85000
+    retry_attempts: 3
+    retry_delay: 1.0
+
+# Agent-specific rate limits
+agents:
+  code_agent:
+    max_requests_per_minute: 30
+    max_tokens_per_minute: 50000
+    
+  documentation_agent:
+    max_requests_per_minute: 25
+    max_tokens_per_minute: 45000
+    
+  review_agent:
+    max_requests_per_minute: 20
+    max_tokens_per_minute: 40000
+
+# Burst limits (short-term spikes)
+burst:
+  max_concurrent_requests: 5
+  burst_period: 10  # seconds
+  cooldown_period: 30  # seconds
+
+# Emergency cutoffs
+emergency:
+  max_daily_requests: 1000
+  max_daily_tokens: 1000000
+  alert_threshold: 0.8  # Alert at 80% of limits

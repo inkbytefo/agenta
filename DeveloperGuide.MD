@@ -1,235 +1,285 @@
-# CrewAI VSCode Uzantısı Geliştirme Rehberi
+# CrewAI VSCode Extension Developer Guide
 
-CrewAI tabanlı çoklu ajan sistemini VSCode'a entegre etmek için kapsamlı geliştirme rehberi.
+## 📋 Table of Contents
+- [Development Setup](#-development-setup)
+- [Code Standards](#-code-standards)
+- [Architecture](#-architecture)
+- [Security Guidelines](#-security-guidelines)
+- [Testing Standards](#-testing-standards)
+- [Communication Protocol](#-communication-protocol)
+- [Contributing](#-contributing)
 
-## 📋 İçindekiler
-- [Mimari Tasarım](#-mimari-tasarım)
-- [Kurulum ve Başlangıç](#-kurulum-ve-başlangıç)
-- [İletişim Protokolü](#-iletişim-protokolü)
-- [Önemli Özellikler](#-önemli-özellikler)
-- [Geliştirme Yol Haritası](#-geliştirme-yol-haritası)
-- [Katkıda Bulunma](#-katkıda-bulunma)
+## 🛠 Development Setup
 
-## 🏗 Mimari Tasarım
-
-### Sistem Mimarisi
-```
-├── VSCode Uzantısı (TypeScript)
-│   ├── Webview Paneli
-│   ├── Python IPC Katmanı
-│   └── Dosya Yöneticisi
-│
-└── Python Arka Uç
-    ├── 5 Temel Ajan
-    ├── LangChain Entegrasyonu
-    └── Araç Yönetim Sistemi
-```
-
-### Ana Bileşenler
-- **Webview Panel**: Ajan etkileşimleri için GUI
-- **IPC Katmanı**: JSON tabanlı mesajlaşma sistemi
-- **Hafıza Yöneticisi**: Proje bazlı context saklama
-
-## 🛠 Kurulum ve Başlangıç
-
-### Ön Koşullar
+### Prerequisites
 - Node.js v18+
 - Python 3.9+
 - VSCode 1.85+
+- Git
 
-### Kurulum Adımları
+### Installation Steps
 ```bash
-# 1. Uzantı iskeletini oluştur
+# 1. Create extension skeleton
 npm install -g yo generator-code
 yo code
 
-# 2. Python bağımlılıklarını yükle
-pip install crewai langchain python-dotx
+# 2. Install Python dependencies
+pip install -r src/backend/requirements.txt
 
-# 3. Geliştirme modunda başlat
-code ./crewai-extension && F5
+# 3. Start in development mode
+code . && F5
 ```
 
-## 📡 İletişim Protokolü
+## 📝 Code Standards
 
-### Temel Mesaj Formatı
-```typescript
-interface BaseMessage {
-  type: 'task' | 'tool_request' | 'agent_response';
-  timestamp: number;
-  correlationId: string;
-}
-```
-
-### Örnek Mesaj Akışı
+### TypeScript Standards
+- Use ESLint with the following configuration:
 ```json
-// Kullanıcı Görevi
 {
-  "type": "user_task",
-  "content": "Merkezi yapılandırma yönetimi için bir modül oluştur"
-}
-
-// Araç Çağrısı
-{
-  "type": "tool_request",
-  "tool": "create_file",
-  "params": {
-    "path": "src/config.js",
-    "content": "export default {}"
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:prettier/recommended"
+  ],
+  "rules": {
+    "@typescript-eslint/explicit-function-return-type": "error",
+    "@typescript-eslint/no-explicit-any": "error",
+    "@typescript-eslint/no-unused-vars": "error",
+    "no-console": ["warn", { "allow": ["warn", "error"] }]
   }
 }
 ```
 
-## 🌟 Önemli Özellikler
+### Python Standards
+- Follow PEP 8 guidelines
+- Use pylint with the following configuration:
+```ini
+[MASTER]
+disable=
+    C0111, # missing-docstring
+    C0103, # invalid-name
+    R0903, # too-few-public-methods
 
-### Akıllı Hafıza Yönetimi
-```python
-# Hafıza kaydetme örneği
-def save_agent_memory(project_path, agent_name, memory):
-    memory_dir = os.path.join(project_path, ".crewai_memories")
-    os.makedirs(memory_dir, exist_ok=True)
-    
-    memory_file = os.path.join(memory_dir, f"{agent_name}.json")
-    with open(memory_file, 'w') as f:
-        json.dump(memory, f)
+[FORMAT]
+max-line-length=100
+
+[MESSAGES CONTROL]
+disable=broad-except,logging-fstring-interpolation
 ```
 
-### Güvenlik Önlemleri
-- 🔑 API anahtarları için VSCode Secret Storage
-- 🛡️ Tüm dosya işlemleri için izin denetimi
-- ⏱️ API çağrı limit yöneticisi
+### Code Formatting
+- TypeScript: Use Prettier
+- Python: Use Black with line length 100
+```bash
+# Format TypeScript
+npm run format
 
-## 🚀 Geliştirme Yol Haritası
-
-### Aşama 1 - Temel İşlevler
-- [x] Uzantı iskeleti oluşturma
-- [x] Tek ajanlı prototip
-  - [x] Python backend implementation with CrewAI
-  - [x] WebSocket-based IPC layer
-  - [x] VSCode Webview panel
-- [x] Temel dosya işlemleri
-  - [x] File operations tool implementation
-  - [x] Natural language command parsing
-  - [x] Memory-aware file handling
-
-#### Desteklenen Dosya İşlemleri
-
-```typescript
-// Temel Komutlar ve Örnekler
-{
-  "create_file": "create a new file called example.js with content 'console.log(\"Hello\")'",
-  "read_file": "show the contents of config.json",
-  "list_files": "list all files in src/components",
-  "delete_file": "delete the file temp.txt",
-  "rename_file": "rename file old.js to new.js",
-  "copy_file": "copy file source.txt to backup.txt",
-  "create_directory": "create a new directory called test",
-  "get_file_info": "show info about package.json"
-}
+# Format Python
+black src/backend --line-length 100
 ```
 
-Her dosya işlemi güvenlik kontrolleri ve hata yönetimi içerir:
-- Yol doğrulama ve normalizasyon
-- İzin kontrolleri
-- Var olan dosya/dizin kontrolleri
-- Hata ayıklama ve raporlama
+### Naming Conventions
+- TypeScript:
+  - Interfaces: PascalCase with 'I' prefix (e.g., IAgentConfig)
+  - Types: PascalCase (e.g., AgentResponse)
+  - Variables/Functions: camelCase
+  - Constants: UPPER_SNAKE_CASE
 
-#### Tek Ajanlı Prototip Yapısı
+- Python:
+  - Classes: PascalCase
+  - Functions/Variables: snake_case
+  - Constants: UPPER_SNAKE_CASE
+  - Private members: Prefix with underscore
 
+### Code Organization
 ```
 src/
 ├── backend/                 # Python backend
 │   ├── agents/             # Agent implementations
-│   │   └── base_agent.py   # CrewAI agent base class
 │   ├── memory/             # Memory management
-│   │   └── memory_manager.py
 │   ├── tools/              # Agent tools
-│   │   └── file_operations.py
-│   ├── ipc/               # Inter-process communication
-│   │   └── message_handler.py
-│   ├── main.py            # Backend entry point
-│   ├── requirements.txt    # Python dependencies
-│   └── .env               # Configuration file
+│   ├── ipc/                # Inter-process communication
+│   └── config/             # Configuration files
 │
-└── extension/             # VSCode extension
-    ├── webview/          # Frontend implementation
-    │   ├── panel.ts      # Webview panel
-    │   └── types.ts      # TypeScript types
-    ├── extension.ts      # Extension entry point
-    ├── package.json      # Node.js dependencies
-    └── tsconfig.json     # TypeScript config
+└── extension/              # VSCode extension
+    ├── webview/           # Frontend implementation
+    ├── utils/             # Utility functions
+    └── types/             # TypeScript type definitions
 ```
 
-##### Kurulum ve Çalıştırma
+### Import Order
+- Python:
+```python
+# Standard library imports
+import os
+import json
 
-1. Python bağımlılıklarını yükleyin:
-```bash
-cd src/backend
-pip install -r requirements.txt
+# Third-party imports
+import crewai
+from langchain import tools
+
+# Local application imports
+from .agents import BaseAgent
+from .config import settings
 ```
 
-2. Backend yapılandırması:
-- `.env` dosyasında OpenAI API anahtarını ayarlayın:
-```
-WORKSPACE_PATH=.
-HOST=localhost
-PORT=3000
-OPENAI_API_KEY=your_api_key_here
-```
-
-3. Node.js bağımlılıklarını yükleyin:
-```bash
-cd src/extension
-npm install
-npm run compile
-```
-
-4. Uygulamayı başlatın:
-- Python backend'i başlatın: `python src/backend/main.py`
-- VSCode'da F5'e basarak uzantıyı başlatın
-- Command Palette'ten (Ctrl+Shift+P) "Open CrewAI Agent" komutunu çalıştırın
-
-##### İletişim Protokolü Örneği
-
+- TypeScript:
 ```typescript
-// Görev gönderme
-{
-  "type": "task",
-  "content": "Create a new file named example.js",
-  "timestamp": 1708871234567
-}
+// Node built-in modules
+import * as path from 'path';
 
-// Ajan yanıtı
-{
-  "type": "agent_response",
-  "status": "success",
-  "content": "Created file example.js",
-  "timestamp": 1708871234568
+// Third-party imports
+import * as vscode from 'vscode';
+
+// Local imports
+import { AgentConfig } from './types';
+```
+
+## 🔒 Security Guidelines
+
+### API Key Management
+- Never store API keys in code
+- Use environment variables for sensitive data
+- Implement key rotation mechanism
+- Use VSCode's Secret Storage API for client-side storage
+
+### Input Validation
+- Sanitize all user inputs
+- Validate file paths
+- Implement strict type checking
+- Use parameterized queries
+
+### Error Handling
+```typescript
+try {
+  await performOperation();
+} catch (error) {
+  if (error instanceof OperationError) {
+    vscode.window.showErrorMessage(`Operation failed: ${error.message}`);
+  } else {
+    // Log unexpected errors
+    console.error('Unexpected error:', error);
+    vscode.window.showErrorMessage('An unexpected error occurred');
+  }
 }
 ```
 
-### Aşama 2 - Gelişmiş Özellikler
-- [ ] Hiyerarşik ajan yönetimi
-- [ ] Gerçek zamanlı debug konsolu
-- [ ] Otomatik test çerçevesi
+## 🧪 Testing Standards
 
-## 🤝 Katkıda Bulunma
+### Unit Tests
+- Python: pytest
+- TypeScript: Jest
+- Minimum 80% code coverage
+- Test structure:
+```typescript
+describe('ComponentName', () => {
+  describe('methodName', () => {
+    it('should handle successful case', async () => {
+      // Arrange
+      // Act
+      // Assert
+    });
 
-### Katkı Kuralları
-1. `develop` branch'ine PR gönderin
-2. Tüm yeni özellikler için test ekleyin
-3. Kod still rehberine uyun:
-   - Python: PEP8
-   - TypeScript: Airbnb Style Guide
-
-### Desteklenen Görevler
-- [ ] Çeviri desteği ekleme
-- [ ] Yeni ajan tipleri oluşturma
-- [ ] Performans optimizasyonları
-
+    it('should handle error case', async () => {
+      // Test error scenarios
+    });
+  });
+});
 ```
 
-> 📝 **Lisans**: MIT License - Proje detayları ve katkı yönergeleri için [CONTRIBUTING.md](https://github.com/organizasyon/crewai-extension/blob/main/CONTRIBUTING.md) dosyasını inceleyin.
-``` 
+### Integration Tests
+- Test IPC communication
+- Test file system operations
+- Test API integrations
+- Use mocks for external services
 
-Bu MD dosyası, projenin tüm kritik yönlerini kapsarken aynı zamanda geliştiricilere net bir yol haritası sunmayı hedefler. Her bölüm detaylandırılabilir ve proje ilerledikçe güncellenmelidir.
+### E2E Tests
+- Test complete user workflows
+- Use VSCode Extension Testing API
+- Simulate user interactions
+
+## 🔄 Git Workflow
+
+### Branch Naming
+- feature/feature-name
+- bugfix/bug-description
+- hotfix/critical-fix
+- release/version-number
+
+### Commit Messages
+```
+type(scope): description
+
+[optional body]
+
+[optional footer]
+```
+
+Types:
+- feat: New feature
+- fix: Bug fix
+- docs: Documentation
+- style: Formatting
+- refactor: Code restructuring
+- test: Adding tests
+- chore: Maintenance
+
+### Pull Request Process
+1. Create feature branch
+2. Write/update tests
+3. Update documentation
+4. Submit PR with description
+5. Pass CI checks
+6. Get code review
+7. Merge after approval
+
+## 📡 Communication Protocol
+
+### Message Format
+```typescript
+interface BaseMessage {
+  type: MessageType;
+  timestamp: number;
+  correlationId: string;
+  payload: unknown;
+}
+
+enum MessageType {
+  TASK = 'task',
+  RESPONSE = 'response',
+  ERROR = 'error',
+  STATUS = 'status'
+}
+```
+
+## 🤝 Contributing
+
+### Getting Started
+1. Fork the repository
+2. Create feature branch
+3. Install dependencies
+4. Make changes
+5. Run tests
+6. Submit PR
+
+### Code Review Process
+- All code must be reviewed
+- Automated checks must pass
+- Documentation must be updated
+- Tests must be included
+- Follow style guide
+
+### Documentation
+- Update README.md for user-facing changes
+- Update DeveloperGuide.MD for developer changes
+- Include JSDoc/docstring comments
+- Keep architecture diagrams updated
+
+## 📚 Additional Resources
+- [VSCode Extension API](https://code.visualstudio.com/api)
+- [CrewAI Documentation](https://www.crewai.com/docs)
+- [TypeScript Guidelines](https://www.typescriptlang.org/docs/handbook/intro.html)
+- [Python Style Guide](https://www.python.org/dev/peps/pep-0008/)
+
+## License
+MIT License - See [LICENSE](LICENSE) for details
