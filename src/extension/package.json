@@ -1,0 +1,66 @@
+{
+  "name": "crewai-vscode",
+  "displayName": "CrewAI VSCode",
+  "description": "CrewAI integration for VSCode",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:crewai.openAgent"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "crewai.openDebugConsole",
+        "title": "Open Debug Console"
+      },
+      {
+        "command": "crewai.openAgent",
+        "title": "Open Agent"
+      },
+      {
+        "command": "crewai.openLLMSettings",
+        "title": "Configure LLM Providers"
+      },
+      {
+        "command": "crewai.getLLMConfigs",
+        "title": "Get LLM Configurations"
+      },
+      {
+        "command": "crewai.getLLMProviders",
+        "title": "Get Available LLM Providers"
+      },
+      {
+        "command": "crewai.getLLMModels",
+        "title": "Get Available Models"
+      },
+      {
+        "command": "crewai.saveLLMConfig",
+        "title": "Save LLM Configuration"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/node": "^16.18.34",
+    "@types/vscode": "^1.85.0",
+    "@types/ws": "^8.5.4",
+    "@typescript-eslint/eslint-plugin": "^6.7.0",
+    "@typescript-eslint/parser": "^6.7.0",
+    "eslint": "^8.26.0",
+    "typescript": "^5.2.2"
+  },
+  "dependencies": {
+    "ws": "^8.13.0"
+  }
+}
