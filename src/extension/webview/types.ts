@@ -45,13 +45,28 @@ export interface LLMRequest {
     correlation_id?: string;
 }
 
-export interface LLMConfig {
+export interface LLMProviderConfig {
     provider_name: string;
     model_name: string;
     api_key?: string;
     temperature: number;
     max_tokens?: number;
     additional_config?: Record<string, any>;
+}
+
+export interface LLMConfig extends LLMProviderConfig {} // For backwards compatibility
+
+export interface LLMProvider {
+    models: string[];
+    description?: string;
+}
+
+export interface LLMProviders {
+    [key: string]: LLMProvider;
+}
+
+export interface LLMConfigs {
+    [key: string]: LLMProviderConfig;
 }
 
 export interface LLMResponse {
@@ -90,7 +105,18 @@ export interface ErrorResponse {
     correlation_id?: string;
 }
 
-export type Message = 
+export interface APIKeyStorage {
+    storeAPIKey(provider: string, key: string): Promise<void>;
+    getAPIKey(provider: string): Promise<string | undefined>;
+    deleteAPIKey(provider: string): Promise<void>;
+    listProviders(): Promise<string[]>;
+}
+
+export interface SecretStorageChangeEvent {
+    key: string;
+}
+
+export type Message =
     | TaskRequest
     | ToolRequest
     | DebugRequest

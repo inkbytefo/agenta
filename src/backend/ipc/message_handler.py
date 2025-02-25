@@ -1,11 +1,13 @@
 import json
-from typing import Dict, Any, Callable, Set
+from typing import Dict, Any, Callable, Set, Optional
 import asyncio
 import websockets
+
 from ..agents.prompt_agent import PromptAgent
 from ..agents.supervisor_agent import SupervisorAgent
+from ..llm.providers import LLMProviderConfig
 from ..debug.debug_console import DebugConsole, WebSocketSubscriber
-from ..modes.mode_manager import ModeManager  # Import ModeManager
+from ..modes.mode_manager import ModeManager
 
 class MessageHandler:
     def __init__(self, prompt_agent: PromptAgent, supervisor_agent: SupervisorAgent):
@@ -21,7 +23,8 @@ class MessageHandler:
             'task': self._handle_task,
             'tool_request': self._handle_tool_request,
             'debug_request': self._handle_debug_request,
-            'mode_request': self._handle_mode_request  # Add mode_request handler
+            'mode_request': self._handle_mode_request,
+            'llm_request': self._handle_llm_request
         }
 
     async def handle_message(self, message: str, websocket) -> str:
@@ -306,6 +309,48 @@ class MessageHandler:
         else:
             return self._create_error_response(f'Unknown mode action: {action}')
 
+    async def _handle_llm_request(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Handle LLM-related requests"""
+        action = data.get('action')
+        agent_name = data.get('agentName')
+        provider = data.get('provider')
+        config = data.get('config')
+        correlation_id = data.get('correlation_id')
+
+        if action == 'get_configs':
+            configs = self.prompt_agent.llm_manager.get_all_agent_configs()
+            return {
+                'type': 'llm_response',
+                'configs': configs,
+                'correlation_id': correlation_id
+            }
+        elif action == 'get_providers':
+            providers = self.prompt_agent.llm_manager.get_available_providers()
+            return {
+                'type': 'llm_response',
+                'providers': {name: {'models': self.prompt_agent.llm_manager.get_available_models(name)} for name in providers},
+                'correlation_id': correlation_id
+            }
+        elif action == 'get_models':
+            if not provider:
+                return self._create_error_response('Provider is required for get_models')
+            models = self.prompt_agent.llm_manager.get_available_models(provider)
+            return {
+                'type': 'llm_response',
+                'models': models,
+                'correlation_id': correlation_id
+            }
+        elif action == 'save_config':
+            if not agent_name or not config:
+                return self._create_error_response('Agent name and config are required for save_config')
+            self.prompt_agent.llm_manager.configure_agent_llm(agent_name, config)
+            return {
+                'type': 'llm_response',
+                'status': 'success',
+                'correlation_id': correlation_id
+            }
+        else:
+            return self._create_error_response(f'Unknown LLM action: {action}')
 
     def _create_error_response(self, error_message: str) -> str:
         """Create error response message"""

@@ -2,15 +2,57 @@ import * as vscode from 'vscode';
 import { DebugPanel } from './webview/debug_panel';
 import { AgentPanel } from './webview/panel';
 import { LLMSettingsPanel } from './webview/llm_settings_panel';
-import { 
-    DebugResponse, 
-    Message, 
-    LLMConfig, 
+import {
+    DebugResponse,
+    Message,
+    LLMConfig,
     LLMResponse,
-    LLMRequest
+    LLMRequest,
+    APIKeyStorage
 } from './webview/types';
 
+// Secret storage keys
+const API_KEY_PREFIX = 'agenta.apiKey.';
+const PROVIDER_LIST_KEY = 'agenta.providers';
+
+// API key storage wrapper
+export class SecureAPIKeyStorage implements APIKeyStorage {
+    private context: vscode.ExtensionContext;
+
+    constructor(context: vscode.ExtensionContext) {
+        this.context = context;
+    }
+
+    async storeAPIKey(provider: string, key: string): Promise<void> {
+        await this.context.secrets.store(`${API_KEY_PREFIX}${provider}`, key);
+        // Update provider list in global state
+        const providers = this.context.globalState.get<string[]>(PROVIDER_LIST_KEY, []);
+        if (!providers.includes(provider)) {
+            providers.push(provider);
+            await this.context.globalState.update(PROVIDER_LIST_KEY, providers);
+        }
+    }
+
+    async getAPIKey(provider: string): Promise<string | undefined> {
+        return await this.context.secrets.get(`${API_KEY_PREFIX}${provider}`);
+    }
+
+    async deleteAPIKey(provider: string): Promise<void> {
+        await this.context.secrets.delete(`${API_KEY_PREFIX}${provider}`);
+        // Update provider list
+        const providers = this.context.globalState.get<string[]>(PROVIDER_LIST_KEY, []);
+        const updatedProviders = providers.filter(p => p !== provider);
+        await this.context.globalState.update(PROVIDER_LIST_KEY, updatedProviders);
+    }
+
+    async listProviders(): Promise<string[]> {
+        return this.context.globalState.get<string[]>(PROVIDER_LIST_KEY, []);
+    }
+}
+
 export function activate(context: vscode.ExtensionContext) {
+    // Initialize secure storage
+    const apiKeyStorage = new SecureAPIKeyStorage(context);
     // Register debug panel commands
     context.subscriptions.push(
         vscode.commands.registerCommand('crewai.openDebugConsole', () => {
@@ -74,7 +116,7 @@ export function activate(context: vscode.ExtensionContext) {
     // Register LLM settings commands
     context.subscriptions.push(
         vscode.commands.registerCommand('crewai.openLLMSettings', () => {
-            LLMSettingsPanel.render(context.extensionUri);
+            LLMSettingsPanel.render(context.extensionUri, context);
         }),
 
         vscode.commands.registerCommand('crewai.getLLMConfigs', async () => {

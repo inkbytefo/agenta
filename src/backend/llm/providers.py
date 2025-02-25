@@ -2,6 +2,7 @@ from typing import Dict, Any, Optional, List
 from abc import ABC, abstractmethod
 from pydantic import BaseModel
 import os
+import yaml
 from langchain.chat_models import (
     ChatOpenAI,
     ChatGooglePalm,
@@ -180,8 +181,8 @@ class LLMProviderManager:
             "anthropic": AnthropicProvider(),
             "openrouter": OpenRouterProvider()
         }
-        self.agent_configs: Dict[str, LLMProviderConfig] = {}
-    
+        self.agent_configs: Dict[str, LLMProviderConfig] = self.get_all_agent_configs()
+
     def get_provider(self, provider_name: str) -> Optional[BaseLLMProvider]:
         """Get provider by name"""
         return self.providers.get(provider_name)
@@ -204,6 +205,13 @@ class LLMProviderManager:
             if provider:
                 provider.initialize_model(config)
                 self.agent_configs[agent_name] = config
+
+                # Save to file
+                all_configs = self.get_all_agent_configs()
+                all_configs[agent_name] = config.dict()  # Convert to dict for saving
+                with open("src/backend/config/llm_configs.yaml", "w") as f:
+                    yaml.dump(all_configs, f)
+
                 return True
             return False
         except Exception as e:
@@ -230,3 +238,22 @@ class LLMProviderManager:
             if provider:
                 return await provider.generate(prompt)
         return None
+
+    def get_all_agent_configs(self) -> Dict[str, LLMProviderConfig]:
+        """Get all agent LLM configurations."""
+        try:
+            with open("src/backend/config/llm_configs.yaml", "r") as f:
+                configs = yaml.safe_load(f)
+                if configs:
+                  # Convert to LLMProviderConfig objects
+                  return {
+                      agent_name: LLMProviderConfig(**config)
+                      for agent_name, config in configs.items()
+                  }
+                else:
+                  return {}
+        except FileNotFoundError:
+            return {}
+        except Exception as e:
+            print(f"Error loading LLM configs: {e}")
+            return {}
