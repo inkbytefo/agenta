@@ -1,0 +1,77 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.whl
+*.egg
+MANIFEST
+
+# PyInstaller
+#  Usually these files are written into a _MEIPASS folder, but if PyInstaller
+#  creates a self-extracting executable, it will use a temp folder instead.
+_MEIPASS/
+_MEI*/
+
+# Environments
+.env
+.venv
+venv/
+ENV/
+env.bak/
+env.save/
+.envrc
+.direnv
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope data
+.ropeproject
+rope_data/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.sock
+
+# Environments
+.env
+venv
+env
+ENV
+*.envrc
+*.direnv
+
+# General
+*.DS_Store
+*.pyc
+*.pyo
+*.log
+*.out
+*.bak
+*.tmp
+*.swp
+*~
+/.vscode/
+node_modules/
