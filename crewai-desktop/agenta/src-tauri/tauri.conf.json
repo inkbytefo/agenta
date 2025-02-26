@@ -6,7 +6,7 @@
   "build": {
     "beforeDevCommand": "npm run dev",
     "beforeBuildCommand": "npm run build",
-    "devUrl": "http://localhost:1420",
+    "devUrl": "http://localhost:3000",
     "frontendDist": "../dist"
   },
   "app": {
@@ -39,9 +39,19 @@
   "plugins": {
     "shell": {
       "scope": {
-        "name": "python",
-        "cmd": "python",
-        "args": true
+        "allow": [
+          {
+            "name": "python",
+            "cmd": "python",
+            "args": true
+          }
+        ]
+      }
+    },
+    "tauri": {
+      "backend": {
+        "port": 3001,
+        "enabled": true
       }
     }
   }

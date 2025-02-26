@@ -1,45 +1,36 @@
 import { create } from 'zustand';
-import { createBackendSlice } from './backend';
-
-export interface LLMConfig {
-  provider: string;
-  model: string;
-  apiKey?: string;
-  settings?: Record<string, any>;
-}
-
-export interface DebugEvent {
-  timestamp: string;
-  level: string;
-  message: string;
-  details?: Record<string, any>;
-}
+import { api, LLMConfig, LLMProvider, DebugEvent } from '../services/api';
 
 interface StoreState {
   // Backend state
   isConnected: boolean;
   connecting: boolean;
   error: string | null;
-  connect: () => Promise<void>;
-  disconnect: () => Promise<void>;
-  checkConnection: () => Promise<void>;
-  sendCommand: (command: string, args?: any) => Promise<any>;
 
   // Task state
   taskStatus: string;
+  currentTask: string | null;
   sendTask: (task: string) => Promise<void>;
 
   // Application state
   currentMode: string;
-  setMode: (mode: string) => Promise<void>;
   debugEvents: DebugEvent[];
   llmConfigs: Record<string, LLMConfig>;
-  llmProviders: Record<string, any>;
-  llmStatus: string;
+  llmProviders: Record<string, LLMProvider>;
+  llmStatus: 'idle' | 'loading' | 'ready' | 'error';
 
-  // Actions
+  // Connection management
+  checkConnection: () => Promise<void>;
+  initialize: () => Promise<void>;
+
+  // Mode management
+  setMode: (mode: string) => Promise<void>;
+
+  // Debug management
   fetchDebugEvents: () => Promise<void>;
   clearDebugLogs: () => Promise<void>;
+
+  // LLM configuration management
   fetchLLMConfigs: () => Promise<void>;
   fetchLLMProviders: () => Promise<void>;
   fetchLLMStatus: () => Promise<void>;
@@ -47,92 +38,119 @@ interface StoreState {
 }
 
 export const useStore = create<StoreState>((set, get) => ({
-  ...createBackendSlice(set, get),
-
-  // Application state
+  // Initial state
+  isConnected: false,
+  connecting: false,
+  error: null,
   currentMode: 'default',
   debugEvents: [],
   llmConfigs: {},
   llmProviders: {},
-  llmStatus: '',
+  llmStatus: 'idle',
   taskStatus: '',
+  currentTask: null,
+
+  // Connection management
+  checkConnection: async () => {
+    try {
+      set({ connecting: true });
+      const response = await api.getLLMStatus();
+      set({ 
+        isConnected: response.status === 'success',
+        error: response.error || null,
+        connecting: false
+      });
+    } catch (error) {
+      set({ 
+        isConnected: false, 
+        error: error instanceof Error ? error.message : 'Connection failed',
+        connecting: false
+      });
+    }
+  },
+
+  initialize: async () => {
+    await get().checkConnection();
+    if (get().isConnected) {
+      await Promise.all([
+        get().fetchLLMConfigs(),
+        get().fetchLLMProviders(),
+        get().fetchLLMStatus(),
+        get().fetchDebugEvents()
+      ]);
+    }
+  },
 
   // Task management
   sendTask: async (task: string) => {
     try {
-      const response = await get().sendCommand('handle_task', { task });
-      set({ taskStatus: response.status || 'Task sent successfully' });
+      set({ taskStatus: 'sending', currentTask: task });
+      const response = await api.handleTask(task);
+      set({
+        taskStatus: response.status === 'success' ? 'completed' : 'error',
+        error: response.error || null
+      });
     } catch (error) {
-      set({ taskStatus: `Error: ${error}` });
-      console.error('Failed to send task:', error);
+      set({
+        taskStatus: 'error',
+        error: error instanceof Error ? error.message : 'Failed to send task'
+      });
     }
   },
 
   // Mode management
   setMode: async (mode: string) => {
-    try {
-      await get().sendCommand('set_mode', { mode });
+    const response = await api.getCurrentMode();
+    if (response.status === 'success') {
       set({ currentMode: mode });
-    } catch (error) {
-      console.error('Failed to set mode:', error);
     }
   },
 
   // Debug events management
   fetchDebugEvents: async () => {
-    try {
-      const events = await get().sendCommand('get_debug_events');
-      set({ debugEvents: events });
-    } catch (error) {
-      console.error('Failed to fetch debug events:', error);
+    const response = await api.getDebugEvents();
+    if (response.status === 'success' && response.data) {
+      set({ debugEvents: response.data });
     }
   },
 
   clearDebugLogs: async () => {
-    try {
-      await get().sendCommand('clear_debug_logs');
+    const response = await api.clearDebugLogs();
+    if (response.status === 'success') {
       set({ debugEvents: [] });
-    } catch (error) {
-      console.error('Failed to clear debug logs:', error);
     }
   },
 
   // LLM configuration management
   fetchLLMConfigs: async () => {
-    try {
-      const configs = await get().sendCommand('get_llm_configs');
-      set({ llmConfigs: configs });
-    } catch (error) {
-      console.error('Failed to fetch LLM configs:', error);
+    const response = await api.getLLMConfigs();
+    if (response.status === 'success' && response.data) {
+      set({ llmConfigs: response.data });
     }
   },
 
   fetchLLMProviders: async () => {
-    try {
-      const providers = await get().sendCommand('get_llm_providers');
-      set({ llmProviders: providers });
-    } catch (error) {
-      console.error('Failed to fetch LLM providers:', error);
+    const response = await api.getLLMProviders();
+    if (response.status === 'success' && response.data) {
+      set({ llmProviders: response.data });
     }
   },
 
   fetchLLMStatus: async () => {
-    try {
-      const response = await get().sendCommand('get_llm_status');
-      set({ llmStatus: response.status });
-    } catch (error) {
-      console.error('Failed to fetch LLM status:', error);
+    const response = await api.getLLMStatus();
+    if (response.status === 'success') {
+      set({ llmStatus: 'ready' });
+    } else {
       set({ llmStatus: 'error' });
     }
   },
 
   saveLLMConfig: async (config: LLMConfig) => {
-    try {
-      await get().sendCommand('save_llm_config', { config });
+    const response = await api.saveLLMConfig(config);
+    if (response.status === 'success') {
       await get().fetchLLMConfigs();
-    } catch (error) {
-      console.error('Failed to save LLM config:', error);
-      throw error;
+    } else {
+      throw new Error(response.error || 'Failed to save LLM config');
     }
-  },
+  }
 }));

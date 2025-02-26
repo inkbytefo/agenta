@@ -1,15 +1,47 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Theme, ThemeMode, lightTheme, darkTheme } from '../styles/theme';
+import * as React from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
+import { create, StateCreator } from 'zustand';
+import { persist, PersistOptions } from 'zustand/middleware';
 
-interface ThemeContextType {
-  theme: Theme;
-  mode: ThemeMode;
-  toggleTheme: () => void;
+// Theme Types
+export type ThemeMode = 'light' | 'dark' | 'high-contrast';
+
+interface ThemeState {
+  theme: ThemeMode;
+  setTheme: (theme: ThemeMode) => void;
 }
 
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+type ThemeStorePersist = (
+  config: StateCreator<ThemeState>,
+  options: PersistOptions<ThemeState>
+) => StateCreator<ThemeState>;
 
-export const useTheme = () => {
+// Create Zustand store with persistence
+const useThemeStore = create<ThemeState>()(
+  (persist as ThemeStorePersist)(
+    (set) => ({
+      theme: 'light' as ThemeMode,
+      setTheme: (theme: ThemeMode) => set({ theme }),
+    }),
+    {
+      name: 'theme-storage',
+    }
+  )
+);
+
+// Theme Context Type
+interface ThemeContextType {
+  theme: ThemeMode;
+  setTheme: (theme: ThemeMode) => void;
+  toggleTheme: () => void;
+  systemTheme: ThemeMode;
+}
+
+// Create Theme Context
+export const ThemeContext = createContext<ThemeContextType | null>(null);
+
+// Custom Hook for Using Theme
+export const useTheme = (): ThemeContextType => {
   const context = useContext(ThemeContext);
   if (!context) {
     throw new Error('useTheme must be used within a ThemeProvider');
@@ -17,55 +49,82 @@ export const useTheme = () => {
   return context;
 };
 
-interface ThemeProviderProps {
-  children: ReactNode;
-}
-
-// Helper function to get the initial theme
-const getInitialTheme = (): ThemeMode => {
-  try {
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'light' || savedTheme === 'dark') {
-      return savedTheme as ThemeMode; // Explicit cast
-    }
-  } catch (error) {
-    console.error("Error accessing localStorage:", error);
+// System Theme Detection
+const getSystemTheme = (): ThemeMode => {
+  if (typeof window !== 'undefined') {
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return prefersDark ? 'dark' : 'light';
   }
-  // Default to system preference if no saved theme or error
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  return 'light';
 };
 
+interface ThemeProviderProps {
+  children: React.ReactNode;
+}
+
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  const [mode, setMode] = useState<ThemeMode>(getInitialTheme);
-  const theme = mode === 'dark' ? darkTheme : lightTheme;
+  const { theme, setTheme } = useThemeStore();
+  const [systemTheme, setSystemTheme] = useState<ThemeMode>(getSystemTheme());
 
+  // Listen for system theme changes
   useEffect(() => {
-    try {
-      localStorage.setItem('theme', mode);
-    } catch (error) {
-      console.error('Error saving theme to localStorage:', error);
-    }
-  }, [theme, mode]);
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    
+    const handleChange = (e: MediaQueryListEvent) => {
+      setSystemTheme(e.matches ? 'dark' : 'light');
+    };
 
+    mediaQuery.addEventListener('change', handleChange);
+    
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
+
+  // Apply theme to document
   useEffect(() => {
-    const root = document.documentElement;
-    Object.entries(theme.colors).forEach(([key, value]) => {
-      if (typeof value === 'object') {
-        Object.entries(value).forEach(([subKey, subValue]) => {
-          root.style.setProperty(`--color-${key}-${subKey}`, subValue);
-        });
-      } else {
-        root.style.setProperty(`--color-${key}`, value);
-      }
-    });
-  }, [theme, mode]);
+    document.documentElement.setAttribute('data-theme', theme);
+    document.documentElement.classList.add('theme-transition');
+    
+    // Remove transition class after animation completes
+    const timeoutId = setTimeout(() => {
+      document.documentElement.classList.remove('theme-transition');
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [theme]);
 
   const toggleTheme = () => {
-    setMode(prevMode => (prevMode === 'light' ? 'dark' : 'light'));
+    const nextTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(nextTheme);
+  };
+
+  const contextValue: ThemeContextType = {
+    theme,
+    setTheme,
+    toggleTheme,
+    systemTheme,
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, mode, toggleTheme }}>
+    <ThemeContext.Provider value={contextValue}>
       {children}
     </ThemeContext.Provider>
   );
+};
+
+// Utility Hook for Theme Values
+export const useThemeValue = (
+  lightValue: string,
+  darkValue: string,
+  highContrastValue?: string
+): string => {
+  const { theme } = useTheme();
+  
+  if (theme === 'high-contrast' && highContrastValue) {
+    return highContrastValue;
+  }
+  
+  return theme === 'dark' ? darkValue : lightValue;
+};
+
+// Export types for components
+export type { ThemeContextType, ThemeProviderProps };

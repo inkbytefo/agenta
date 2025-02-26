@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "crewai-vscode"
+name = "crewai-desktop"
 version = "0.1.0"
-description = "VSCode extension for AI-powered development assistance using CrewAI"
+description = "Desktop application for AI-powered development assistance using CrewAI"
 authors = ["Development Team"]
 readme = "README.md"
 packages = [{include = "src"}]

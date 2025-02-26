@@ -5,30 +5,47 @@ use std::process::{Command, Stdio};
 use std::sync::Mutex;
 use tauri::State;
 use serde::{Deserialize, Serialize};
-use std::io::Write;
+use std::io::{Write, BufRead};
+use std::path::PathBuf;
 
 #[derive(Default)]
 struct PythonProcess(Mutex<Option<std::process::Child>>);
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum CommandStatus {
+    Success,
+    Error,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 struct PythonMessage {
-    status: String,
+    status: CommandStatus,
     data: Option<serde_json::Value>,
     error: Option<String>,
 }
 
+fn get_backend_path() -> PathBuf {
+    let mut path = std::env::current_dir().expect("Failed to get current directory");
+    path.push("src");
+    path.push("backend");
+    path.push("main.py");
+    path
+}
+
 #[tauri::command]
 async fn start_backend(python_process: State<'_, PythonProcess>) -> Result<String, String> {
-    let mut process = python_process.0.lock().unwrap();
+    let mut process = python_process.0.lock().map_err(|e| e.to_string())?;
     
     if process.is_some() {
         return Ok("Backend already running".to_string());
     }
 
-    let python_path = std::env::var("PYTHON_PATH").unwrap_or("python".to_string());
+    let python_path = std::env::var("PYTHON_PATH").unwrap_or_else(|_| "python".to_string());
+    let backend_path = get_backend_path();
+
     let child = Command::new(&python_path)
-        .arg("backend/main.py")
-        .current_dir(tauri::api::path::app_dir(&tauri::Config::default()).unwrap())
+        .arg(backend_path)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -41,7 +58,7 @@ async fn start_backend(python_process: State<'_, PythonProcess>) -> Result<Strin
 
 #[tauri::command]
 async fn stop_backend(python_process: State<'_, PythonProcess>) -> Result<String, String> {
-    let mut process = python_process.0.lock().unwrap();
+    let mut process = python_process.0.lock().map_err(|e| e.to_string())?;
     
     if let Some(mut child) = process.take() {
         child.kill().map_err(|e| format!("Failed to kill Python process: {}", e))?;
@@ -53,38 +70,48 @@ async fn stop_backend(python_process: State<'_, PythonProcess>) -> Result<String
 }
 
 #[tauri::command]
-async fn send_to_backend(
+async fn send_command(
     command: String,
-    args: serde_json::Value,
+    args: String,
     python_process: State<'_, PythonProcess>,
-) -> Result<PythonMessage, String> {
-    let process = python_process.0.lock().unwrap();
+) -> Result<String, String> {
+    let process = python_process.0.lock().map_err(|e| e.to_string())?;
     
     if let Some(child) = process.as_ref() {
-        if let Some(mut stdin) = child.stdin.as_ref() {
-            let message = serde_json::json!({
-                "command": command,
-                "args": args
-            });
+        let stdin = child.stdin.as_ref()
+            .ok_or_else(|| "Failed to get stdin handle".to_string())?;
+        let mut stdin = stdin.lock().map_err(|e| e.to_string())?;
 
-            stdin.write_all(message.to_string().as_bytes())
-                .map_err(|e| format!("Failed to write to Python process: {}", e))?;
-            stdin.write_all(b"\n")
-                .map_err(|e| format!("Failed to write newline: {}", e))?;
+        let message = serde_json::json!({
+            "command": command,
+            "args": serde_json::from_str::<serde_json::Value>(&args)
+                .map_err(|e| format!("Failed to parse args: {}", e))?
+        });
 
-            // Read response
-            if let Some(stdout) = child.stdout.as_ref() {
-                use std::io::BufRead;
-                let reader = std::io::BufReader::new(stdout);
-                if let Some(Ok(line)) = reader.lines().next() {
-                    return serde_json::from_str(&line)
-                        .map_err(|e| format!("Failed to parse Python response: {}", e));
-                }
-            }
+        stdin.write_all(message.to_string().as_bytes())
+            .map_err(|e| format!("Failed to write to Python process: {}", e))?;
+        stdin.write_all(b"\n")
+            .map_err(|e| format!("Failed to write newline: {}", e))?;
 
-            Err("Failed to read response from Python".to_string())
+        // Read response with timeout
+        if let Some(stdout) = child.stdout.as_ref() {
+            let reader = std::io::BufReader::new(stdout);
+            let response = tokio::time::timeout(
+                std::time::Duration::from_secs(30),
+                tokio::task::spawn_blocking(move || {
+                    reader.lines()
+                        .next()
+                        .transpose()
+                        .map_err(|e| format!("Failed to read response: {}", e))
+                })
+            ).await
+                .map_err(|_| "Command timed out".to_string())?
+                .map_err(|e| format!("Task failed: {}", e))??
+                .ok_or_else(|| "No response from backend".to_string())?;
+
+            Ok(response)
         } else {
-            Err("Failed to get stdin handle".to_string())
+            Err("Failed to get stdout handle".to_string())
         }
     } else {
         Err("Backend not running".to_string())
@@ -93,7 +120,9 @@ async fn send_to_backend(
 
 #[tauri::command]
 async fn check_backend(python_process: State<'_, PythonProcess>) -> bool {
-    python_process.0.lock().unwrap().is_some()
+    python_process.0.lock()
+        .map(|guard| guard.is_some())
+        .unwrap_or(false)
 }
 
 fn main() {
@@ -102,7 +131,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             start_backend,
             stop_backend,
-            send_to_backend,
+            send_command,
             check_backend,
         ])
         .setup(|app| {

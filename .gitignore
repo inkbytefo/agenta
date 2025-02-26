@@ -1,13 +1,17 @@
-# Byte-compiled / optimized / DLL files
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+yarn-debug.log
+.pnpm-debug.log
+
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
-
-# C extensions
 *.so
-
-# Distribution / packaging
 .Python
+env/
 build/
 develop-eggs/
 dist/
@@ -19,59 +23,33 @@ lib64/
 parts/
 sdist/
 var/
-wheels/
 *.egg-info/
 .installed.cfg
-*.whl
 *.egg
-MANIFEST
+.pytest_cache/
+.coverage
+htmlcov/
 
-# PyInstaller
-#  Usually these files are written into a _MEIPASS folder, but if PyInstaller
-#  creates a self-extracting executable, it will use a temp folder instead.
-_MEIPASS/
-_MEI*/
+# Tauri
+src-tauri/target/
 
-# Environments
+# Environment variables
 .env
-.venv
-venv/
-ENV/
-env.bak/
-env.save/
-.envrc
-.direnv
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
-# Spyder project settings
-.spyderproject
-.spyproject
-
-# Rope data
-.ropeproject
-rope_data/
-
-# mypy
-.mypy_cache/
-.dmypy.json
-dmypy.sock
-
-# Environments
-.env
-venv
-env
-ENV
-*.envrc
-*.direnv
-
-# General
-*.DS_Store
-*.pyc
-*.pyo
-*.log
-*.out
-*.bak
-*.tmp
+# IDE
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
 *.swp
-*~
-/.vscode/
-node_modules/
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

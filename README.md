@@ -1,10 +1,10 @@
-# CrewAI VSCode Extension
+# CrewAI Desktop Application
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.9+-blue.svg)
 ![TypeScript](https://img.shields.io/badge/typescript-4.9+-blue.svg)
 
-A VSCode extension that integrates AI-powered development assistance using the CrewAI framework. It provides intelligent code generation, documentation, testing, and review capabilities through specialized AI agents.
+A desktop application that provides AI-powered development assistance using the CrewAI framework. It offers intelligent code generation, documentation, testing, and review capabilities through specialized AI agents.
 
 ## 🚀 Features
 
@@ -30,40 +30,35 @@ A VSCode extension that integrates AI-powered development assistance using the C
 
 ## 📋 Requirements
 
-- VSCode 1.85+
 - Python 3.9+
 - Node.js 18+
-- Poetry (Python dependency management)
+- Rust (latest stable)
+- Platform-specific build tools:
+  - Windows: Microsoft Visual Studio C++ Build Tools
+  - macOS: Xcode Command Line Tools
+  - Linux: `build-essential` package
 
 ## 🛠️ Installation
 
-1. **Install Poetry**
+1. **Install Dependencies**
 ```bash
-curl -sSL https://install.python-poetry.org | python3 -
-```
-
-2. **Clone and Setup**
-```bash
-git clone https://github.com/yourusername/crewai-vscode.git
-cd crewai-vscode
-
-# Install Python dependencies
-poetry install
-
-# Install Node.js dependencies
-cd src/extension
+# Install frontend dependencies
 npm install
+
+# Install Python backend dependencies
+cd src/backend
+pip install -r requirements.txt
+cd ../..
 ```
 
-3. **Configure Environment**
-```bash
-# Copy template and edit with your settings
-cp src/backend/.env.template src/backend/.env
-```
+2. **Configure Environment**
 
-4. **Setup Pre-commit Hooks**
-```bash
-poetry run pre-commit install
+Create a `.env` file in the `src/backend` directory:
+
+```env
+# LLM Provider API Keys
+OPENAI_API_KEY=your_openai_key_here
+ANTHROPIC_API_KEY=your_anthropic_key_here
 ```
 
 ## 🔧 Configuration
@@ -82,43 +77,30 @@ ANTHROPIC_API_KEY=your_key_here
 GOOGLE_API_KEY=your_key_here
 ```
 
-### Extension Settings
+## Development
 
-Configure the extension through VSCode settings:
+Start the development server:
 
-- `crewai.defaultProvider`: Default LLM provider
-- `crewai.maxTokens`: Maximum tokens per request
-- `crewai.temperature`: Temperature for generations
+```bash
+npm run tauri dev
+```
 
-## 🎯 Usage
+This will launch:
+- The Tauri application window
+- The React development server
+- The Python backend process
 
-### Command Palette
+## Building
 
-Access features through VSCode's command palette (Ctrl+Shift+P):
+Create a production build:
 
-- `CrewAI: Generate Code`
-- `CrewAI: Document Code`
-- `CrewAI: Review Code`
-- `CrewAI: Generate Tests`
+```bash
+npm run tauri build
+```
 
-### Context Menu
+This will generate platform-specific installers in the `src-tauri/target/release` directory.
 
-Right-click in editor for contextual actions:
-
-- Generate implementation
-- Add documentation
-- Create tests
-- Review selection
-
-### Settings UI
-
-Configure LLM providers and models through the settings UI:
-
-1. Open Command Palette
-2. Run `CrewAI: Open Settings`
-3. Configure providers and models
-
-## 🧪 Development
+## �� Development
 
 ### Project Structure
 ```

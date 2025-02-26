@@ -1,0 +1,276 @@
+:root {
+  /* Colors */
+  --primary-color: #00D2A1;
+  --primary-hover: #008F68;
+  --primary-text-color: #000000;
+  --background-color: #FFFFFF;
+  --sidebar-background: #FFFFFF;
+  --content-background: #FFFFFF;
+  --secondary-background: #F5F5F5;
+  --debug-background: #333333;
+  --text-color: #000000;
+  --border-color: #E0E0E0;
+  --error-color: #FF4D4F;
+  --success-color: #52C41A;
+  --disabled-color: #D9D9D9;
+  --shadow-color: rgba(0, 0, 0, 0.1);
+
+  /* Typography */
+  --heading-font-size: 24px;
+  --subheading-font-size: 18px;
+  --body-font-size: 14px;
+  --small-font-size: 12px;
+  --font-family: 'Roboto', sans-serif;
+  --line-height: 1.5;
+
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+
+  /* Layout */
+  --sidebar-width: 250px;
+  --sidebar-collapsed-width: 60px;
+  --status-bar-height: 30px;
+  --header-height: 60px;
+  --border-radius: 4px;
+}
+
+/* Base Styles */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-family);
+  color: var(--text-color);
+  line-height: var(--line-height);
+  background-color: var(--background-color);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  font-weight: 600;
+}
+
+h1 { font-size: var(--heading-font-size); }
+h2 { font-size: var(--subheading-font-size); }
+p { font-size: var(--body-font-size); }
+
+/* Layout Components */
+.sidebar {
+  background-color: var(--sidebar-background);
+  width: var(--sidebar-width);
+  height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
+  padding: var(--spacing-md);
+  box-sizing: border-box;
+  border-right: 1px solid var(--border-color);
+  transition: width 0.3s ease;
+  z-index: 1000;
+}
+
+.sidebar.collapsed {
+  width: var(--sidebar-collapsed-width);
+}
+
+.main-content {
+  margin-left: var(--sidebar-width);
+  padding: var(--spacing-md);
+  background-color: var(--content-background);
+  min-height: calc(100vh - var(--status-bar-height));
+  transition: margin-left 0.3s ease;
+}
+
+.main-content.sidebar-collapsed {
+  margin-left: var(--sidebar-collapsed-width);
+}
+
+.status-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--status-bar-height);
+  background-color: var(--secondary-background);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--spacing-md);
+  box-sizing: border-box;
+  border-top: 1px solid var(--border-color);
+  font-size: var(--small-font-size);
+  z-index: 1000;
+}
+
+/* Interactive Elements */
+.button {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-size: var(--body-font-size);
+  transition: background-color 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+}
+
+.button:hover {
+  background-color: var(--primary-hover);
+}
+
+.button:disabled {
+  background-color: var(--disabled-color);
+  cursor: not-allowed;
+}
+
+.button.secondary {
+  background-color: var(--secondary-background);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+}
+
+.button.secondary:hover {
+  background-color: var(--border-color);
+}
+
+.input-field {
+  width: 100%;
+  padding: var(--spacing-sm);
+  margin: var(--spacing-xs) 0;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  box-sizing: border-box;
+  font-size: var(--body-font-size);
+  background-color: var(--secondary-background);
+  transition: border-color 0.2s ease;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.dropdown {
+  position: relative;
+  width: 100%;
+}
+
+.dropdown select {
+  width: 100%;
+  padding: var(--spacing-sm);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  background-color: var(--secondary-background);
+  font-size: var(--body-font-size);
+  cursor: pointer;
+  appearance: none;
+}
+
+.dropdown::after {
+  content: '';
+  position: absolute;
+  right: var(--spacing-md);
+  top: 50%;
+  transform: translateY(-50%);
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid var(--text-color);
+  pointer-events: none;
+}
+
+/* Debug Console */
+.debug-console {
+  background-color: var(--debug-background);
+  color: #ffffff;
+  padding: var(--spacing-md);
+  height: 300px;
+  overflow-y: auto;
+  font-family: 'Consolas', monospace;
+  border-radius: var(--border-radius);
+  margin-top: var(--spacing-md);
+}
+
+.debug-console .log {
+  margin: var(--spacing-xs) 0;
+  font-size: var(--small-font-size);
+}
+
+.debug-console .error { color: var(--error-color); }
+.debug-console .success { color: var(--success-color); }
+
+/* Icons */
+.icon {
+  width: 24px;
+  height: 24px;
+  color: var(--text-color);
+  transition: color 0.2s ease;
+}
+
+.icon:hover {
+  color: var(--primary-color);
+}
+
+/* Task Execution */
+.task-execution {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* Toast Notifications */
+.toast {
+  position: fixed;
+  bottom: calc(var(--status-bar-height) + var(--spacing-md));
+  right: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius);
+  background-color: var(--secondary-background);
+  color: var(--text-color);
+  font-size: var(--small-font-size);
+  box-shadow: 0 2px 8px var(--shadow-color);
+  z-index: 1100;
+}
+
+.toast.success { background-color: var(--success-color); color: white; }
+.toast.error { background-color: var(--error-color); color: white; }
+
+/* Accessibility */
+@media (prefers-reduced-motion) {
+  .sidebar,
+  .main-content,
+  .button,
+  .icon {
+    transition: none;
+  }
+}
+
+/* Focus styles */
+:focus {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background-color: #1F1F1F;
+    --sidebar-background: #2D2D2D;
+    --content-background: #1F1F1F;
+    --secondary-background: #2D2D2D;
+    --text-color: #FFFFFF;
+    --border-color: #404040;
+  }
+}

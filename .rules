@@ -1,0 +1,90 @@
+# CrewAI Desktop Project Guidelines for GPTs
+
+## Project Overview
+- CrewAI Desktop is a Tauri-based desktop application that provides a GUI for the CrewAI framework
+- The application combines a React frontend, Python backend, and Rust/Tauri shell
+- The project has transitioned from a VSCode extension to a standalone desktop application
+
+## Code Standards
+
+### Python (Backend)
+- Follow PEP 8 guidelines with a line length of 100
+- Use Black for formatting with `--line-length=100`
+- Use isort for import sorting with `--profile=black --line-length=100`
+- Include docstrings for all public functions, classes, and methods (Google style)
+- Type hints are required for all function parameters and return values
+- Maximum complexity (McCabe) of 10 per function
+- Use environment variables for configuration, never hardcode secrets
+
+### TypeScript/React (Frontend)
+- Use TypeScript for all frontend code
+- Follow Prettier formatting standards
+- Use functional components with hooks instead of class components
+- Use PascalCase for component names and interfaces (with 'I' prefix)
+- Use camelCase for variables, functions, and instances
+- Keep components small and focused on a single responsibility
+- Use CSS modules or styled-components for styling
+
+### Rust (Tauri)
+- Follow Rust standard formatting (rustfmt)
+- Use snake_case for functions and variables
+- Use CamelCase for types and traits
+- Minimize unsafe code blocks
+- Handle errors properly, avoid unwrap() in production code
+- Document public APIs
+
+## Project Structure
+- `/src/frontend`: React frontend application
+- `/src/backend`: Python backend application
+- `/src-tauri`: Tauri/Rust integration code
+- `/docs`: Project documentation
+- `/tests`: Test files for both frontend and backend
+
+## Git Workflow
+- Use descriptive branch names (feature/..., bugfix/..., etc.)
+- Keep commits small and focused
+- Write meaningful commit messages
+- Reference issue numbers in commit messages when applicable
+- Create pull requests for all significant changes
+- Squash commits when merging to main
+
+## Testing Requirements
+- Backend: Minimum 80% test coverage for Python code
+- Frontend: Unit tests for all components and hooks
+- Integration tests for critical user flows
+- Test both success and failure cases
+
+## Documentation
+- Update README.md with any significant changes
+- Document all APIs using OpenAPI/Swagger
+- Include setup instructions for new dependencies
+- Document any environment variables in .env.template
+
+## Security Guidelines
+- Never commit API keys or secrets
+- Use environment variables for sensitive information
+- Validate all user inputs
+- Implement proper error handling
+- Follow OWASP security best practices
+- Restrict CORS to necessary origins in production
+
+## Performance Considerations
+- Optimize React renders (use memoization where appropriate)
+- Keep bundle size minimal
+- Implement pagination for large datasets
+- Use efficient data structures and algorithms
+- Profile and optimize slow operations
+
+## CrewAI Specific Guidelines
+- Follow YAML configuration patterns for agents and tasks
+- Respect rate limits for LLM providers
+- Implement proper error handling for API calls
+- Document all agent configurations
+- Use guardrails for task outputs when appropriate
+- Follow hierarchical process patterns for complex workflows
+
+## Dependencies
+- Get approval before adding new dependencies
+- Keep dependencies updated but stable
+- Prefer well-maintained libraries with active communities
+- Document purpose of each dependency

@@ -21,10 +21,9 @@ A desktop application version of the CrewAI VSCode extension, built with Tauri, 
   - macOS: Xcode Command Line Tools
   - Linux: `build-essential` package
 
-## Setup
+## 🛠️ Installation
 
-1. Install dependencies:
-
+1. **Install Dependencies**
 ```bash
 # Install frontend dependencies
 npm install
@@ -35,7 +34,7 @@ pip install -r requirements.txt
 cd ../..
 ```
 
-2. Set up your environment:
+2. **Configure Environment**
 
 Create a `.env` file in the `src/backend` directory:
 
@@ -43,6 +42,22 @@ Create a `.env` file in the `src/backend` directory:
 # LLM Provider API Keys
 OPENAI_API_KEY=your_openai_key_here
 ANTHROPIC_API_KEY=your_anthropic_key_here
+```
+
+## 🔧 Configuration
+
+### LLM Provider Setup
+
+1. Obtain API keys for supported providers:
+   - OpenAI
+   - Anthropic
+   - Google AI
+
+2. Add API keys to your `.env` file:
+```env
+OPENAI_API_KEY=your_key_here
+ANTHROPIC_API_KEY=your_key_here
+GOOGLE_API_KEY=your_key_here
 ```
 
 ## Development

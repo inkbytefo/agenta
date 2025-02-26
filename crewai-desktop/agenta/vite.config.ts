@@ -11,11 +11,18 @@ export default defineConfig({
   
   // Configure server
   server: {
-    port: 1420,
-    strictPort: true,
+    port: 3000,
+    strictPort: false, // Allow fallback to next available port
+    host: true, // Listen on all addresses
+    // Handle port in use
+    hmr: { port: 3000 },
     watch: {
       // Watch backend directory for changes
       ignored: ['**/src-tauri/backend/**']
+    },
+    proxy: {
+      // Proxy backend requests to Tauri backend server
+      '/api': 'http://localhost:3001'
     }
   },
 

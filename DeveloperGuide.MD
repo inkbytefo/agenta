@@ -1,4 +1,4 @@
-# CrewAI VSCode Extension Developer Guide
+# CrewAI Desktop Application Developer Guide
 
 ## 📋 Table of Contents
 - [Development Setup](#-development-setup)
@@ -9,24 +9,33 @@
 - [Communication Protocol](#-communication-protocol)
 - [Contributing](#-contributing)
 
-## 🛠 Development Setup
+## 🛠️ Installation
 
 ### Prerequisites
 - Node.js v18+
 - Python 3.9+
-- VSCode 1.85+
+- Rust (latest stable)
 - Git
+- Platform-specific build tools:
+  - Windows: Microsoft Visual Studio C++ Build Tools
+  - macOS: Xcode Command Line Tools
+  - Linux: `build-essential` package
 
-### Installation Steps
+### 🛠️ Installation Steps
 ```bash
-# 1. Create extension skeleton
-npm install -g yo generator-code
-yo code
+# 1. Clone the repository
+git clone https://github.com/yourusername/agenta.git
+cd agenta
 
-# 2. Install Python dependencies
-pip install -r src/backend/requirements.txt
+# 2. Install frontend dependencies
+npm install
 
-# 3. Start in development mode
+# 3. Install Python backend dependencies
+cd src/backend
+pip install -r requirements.txt
+cd ../..
+
+# 4. Start in development mode
 code . && F5
 ```
 

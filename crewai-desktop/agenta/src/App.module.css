@@ -3,73 +3,102 @@
     display: flex;
     flex-direction: column;
     height: 100vh;
-    background-color: #f0f2f5; /* Light gray background */
-    color: #333; /* Dark text color */
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    font-family: var(--font-primary);
 }
 
 /* Header */
 .appHeader {
-    background-color: #fff; /* White header */
-    border-bottom: 1px solid #ddd; /* Light border */
-    padding: 0.5rem 1rem;
+    background-color: var(--color-bg-primary);
+    border-bottom: 1px solid var(--color-border);
+    padding: var(--spacing-sm) var(--spacing-md);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+    box-shadow: var(--shadow-sm);
 }
 
 .logo {
-    font-size: 1.8rem;
-    font-weight: 700;
-    color: #4a90e2; /* Blue logo color */
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-primary);
 }
 
 .topNav {
     display: flex;
-    gap: 1rem;
+    gap: var(--spacing-md);
+    align-items: center;
+}
+
+.themeToggle {
+    background: none;
+    border: none;
+    color: var(--color-text-primary);
+    padding: var(--spacing-xs);
+    cursor: pointer;
+    border-radius: var(--radius-md);
+    transition: background-color var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-size-lg);
+}
+
+.themeToggle:hover {
+    background-color: var(--color-bg-tertiary);
 }
 
 /* Main Content */
 .mainContent {
     display: flex;
     flex: 1;
-    overflow: hidden; /* Prevent double scrollbars */
+    overflow: hidden;
 }
 
 /* Sidebar */
 .sidebar {
-    width: 70px; /* Fixed narrow width */
-    background-color: #fff; /* White sidebar */
-    border-right: 1px solid #ddd; /* Light border */
-    overflow-x: hidden; /* Hide horizontal scroll */
-    transition: width 0.3s ease;
+    width: 70px;
+    background-color: var(--color-bg-primary);
+    border-right: 1px solid var(--color-border);
+    overflow-x: hidden;
+    transition: width var(--transition-normal);
     display: flex;
     flex-direction: column;
-    align-items: center; /* Center icons vertically */
+    align-items: center;
+    position: relative;
 }
 
 .sidebar.open {
-    width: 240px; /* Expand on hover - optional */
+    width: 240px;
 }
 
 .sidebarToggle {
-  display: none; /* Hide toggle button, sidebar is always visible */
-  position: absolute;
-  top: 1rem;
-  right: -16px;
-  background-color: transparent;
-  color: #666;
-  border: none;
-  font-size: 1.2rem;
-  cursor: pointer;
-  z-index: 100;
+    position: absolute;
+    top: var(--spacing-md);
+    right: -16px;
+    background-color: var(--color-bg-primary);
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: var(--spacing-xs);
+    cursor: pointer;
+    z-index: var(--z-sticky);
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sidebarToggle:hover {
+    background-color: var(--color-bg-secondary);
+    color: var(--color-text-primary);
 }
 
 .sidebarNav {
     list-style: none;
     padding: 0;
-    margin-top: 1rem; /* Space from the top */
+    margin-top: var(--spacing-md);
     width: 100%;
 }
 
@@ -77,67 +106,73 @@
     width: 100%;
     display: flex;
     justify-content: center;
-    margin-bottom: 0.5rem; /* Space between items */
+    margin-bottom: var(--spacing-xs);
 }
 
 .sidebarButton {
     display: flex;
-    flex-direction: column; /* Stack icon and label vertically */
+    flex-direction: column;
     align-items: center;
     width: 100%;
-    padding: 0.75rem;
-    border-radius: 8px; /* Rounded corners */
-    transition: background-color 0.2s;
-    color: #666; /* Gray icon color */
-    text-decoration: none; /* Remove underline from links */
-    font-size: 0.8rem;
+    padding: var(--spacing-sm);
+    border-radius: var(--radius-md);
+    transition: background-color var(--transition-fast);
+    color: var(--color-text-secondary);
+    text-decoration: none;
+    font-size: var(--font-size-sm);
+    border: none;
+    background: none;
+    cursor: pointer;
 }
 
 .sidebarButton:hover {
-    background-color: #f0f0f0; /* Light gray on hover */
+    background-color: var(--color-bg-secondary);
 }
 
 .sidebarItem.active .sidebarButton {
-    background-color: #e8f0fe; /* Light blue for active item */
-    color: #4a90e2; /* Blue text for active item */
+    background-color: var(--color-primary);
+    color: var(--color-bg-primary);
 }
 
 .sidebarIcon {
-    font-size: 1.5rem; /* Larger icon size */
-    margin-bottom: 0.25rem; /* Space between icon and label */
+    font-size: var(--font-size-xl);
+    margin-bottom: var(--spacing-xs);
 }
 
 .sidebarLabel {
-    display: block; /* Make label visible */
+    display: block;
     text-align: center;
-    font-size: 0.75rem; /* Smaller font size for labels */
+    font-size: var(--font-size-sm);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* App Content */
 .appContent {
     flex: 1;
-    padding: 1.5rem;
+    padding: var(--spacing-lg);
     overflow-y: auto;
-    background-color: #f0f2f5;
+    background-color: var(--color-bg-secondary);
 }
 
-/* Make elements look like the provided image */
+/* Panel Styles */
 .agentPanel,
 .debugPanel,
 .llmSettingsPanel {
-    background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    padding: 1.5rem;
+    background-color: var(--color-bg-primary);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: var(--spacing-lg);
 }
 
 .agentPanel h2,
 .debugPanel h2,
 .llmSettingsPanel h2 {
-    color: #333;
-    margin-bottom: 1rem;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 0.5rem;
+    color: var(--color-text-primary);
+    margin-bottom: var(--spacing-md);
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: var(--spacing-xs);
 }
 
 .agentPanel textarea,
@@ -145,88 +180,93 @@
 .llmSettingsPanel input[type="text"],
 .llmSettingsPanel input[type="password"],
 .llmSettingsPanel select {
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    padding: 0.5rem;
-    background-color: #f9f9f9;
-    color: #333;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: var(--spacing-sm);
+    background-color: var(--color-input-bg);
+    color: var(--color-input-text);
     width: 100%;
-    margin-bottom: 1rem;
+    margin-bottom: var(--spacing-md);
+    transition: border-color var(--transition-fast);
 }
 
 .agentPanel button,
 .debugPanel button,
 .llmSettingsPanel button {
-    background-color: #4a90e2;
-    color: white;
+    background-color: var(--color-primary);
+    color: var(--color-bg-primary);
     border: none;
-    padding: 0.5rem 1rem;
-    border-radius: 4px;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-sm);
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: background-color var(--transition-fast);
 }
 
 .agentPanel button:hover,
 .debugPanel button:hover,
 .llmSettingsPanel button:hover {
-    background-color: #357bd8;
+    background-color: var(--color-primary-dark);
 }
 
+/* Debug Panel Specific Styles */
 .debugPanel .toolbar {
-    margin-bottom: 1rem;
+    margin-bottom: var(--spacing-md);
 }
 
 .debugPanel .event {
-    border-left: 4px solid; /* Use border for colored line */
-    padding: 0.5rem;
-    margin-bottom: 0.5rem;
-    background-color: #f9f9f9;
+    border-left: 4px solid;
+    padding: var(--spacing-sm);
+    margin-bottom: var(--spacing-xs);
+    background-color: var(--color-bg-tertiary);
+    border-radius: var(--radius-sm);
 }
 
 .debugPanel .event.info {
-    border-left-color: #4a90e2; /* Blue for info */
+    border-left-color: var(--color-info);
 }
 
 .debugPanel .event.warning {
-    border-left-color: #f0ad4e; /* Yellow for warning */
+    border-left-color: var(--color-warning);
 }
 
 .debugPanel .event.error {
-    border-left-color: #d9534f; /* Red for error */
+    border-left-color: var(--color-error);
 }
 
 .debugPanel .timestamp {
-    color: #999;
-    font-size: 0.8rem;
+    color: var(--color-text-tertiary);
+    font-size: var(--font-size-xs);
 }
 
 .debugPanel .level {
-    font-weight: bold;
-    margin-left: 0.5rem;
+    font-weight: var(--font-weight-bold);
+    margin-left: var(--spacing-xs);
 }
 
 .debugPanel .message {
-    margin-top: 0.25rem;
-    color: #333;
+    margin-top: var(--spacing-xs);
+    color: var(--color-text-primary);
 }
 
 .debugPanel .details {
-    background-color: #eee;
-    padding: 0.5rem;
-    margin-top: 0.5rem;
-    border-radius: 4px;
+    background-color: var(--color-bg-tertiary);
+    padding: var(--spacing-sm);
+    margin-top: var(--spacing-xs);
+    border-radius: var(--radius-sm);
     overflow-x: auto;
     white-space: pre-wrap;
 }
 
+/* Settings Panel Specific Styles */
 .llmSettingsPanel .configItem {
-    background-color: #f9f9f9;
-    border: 1px solid #ddd;
-    padding: 1rem;
-    margin-bottom: 0.5rem;
+    background-color: var(--color-bg-tertiary);
+    border: 1px solid var(--color-border);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-xs);
     display: flex;
     justify-content: space-between;
     align-items: center;
+    border-radius: var(--radius-sm);
 }
 
 .llmSettingsPanel .configDetails {
@@ -235,37 +275,36 @@
 }
 
 .llmSettingsPanel .configProvider {
-    font-weight: bold;
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text-primary);
 }
 
 .llmSettingsPanel .configModel {
-    color: #666;
+    color: var(--color-text-secondary);
 }
 
 .llmSettingsPanel .formGroup {
-    margin-bottom: 1rem;
+    margin-bottom: var(--spacing-md);
 }
 
 .llmSettingsPanel label {
     display: block;
-    margin-bottom: 0.25rem;
-    color: #666;
+    margin-bottom: var(--spacing-xs);
+    color: var(--color-text-secondary);
 }
 
 .llmSettingsPanel .statusMessage {
-  padding: 10px;
-  margin-top: 10px;
-  border-radius: 4px;
+    padding: var(--spacing-sm);
+    margin-top: var(--spacing-sm);
+    border-radius: var(--radius-sm);
 }
 
 .llmSettingsPanel .successMessage {
-  background-color: #dff0d8;
-  border: 1px solid #d0e9c6;
-  color: #3c763d;
+    background-color: var(--color-success);
+    color: var(--color-bg-primary);
 }
 
 .llmSettingsPanel .errorMessage {
-  background-color: #f2dede;
-  border: 1px solid #ebccd1;
-  color: #a94442;
+    background-color: var(--color-error);
+    color: var(--color-bg-primary);
 }
