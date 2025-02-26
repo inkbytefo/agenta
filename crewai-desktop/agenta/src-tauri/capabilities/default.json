@@ -1,0 +1,15 @@
+{
+  "fs": {
+    "scope": {
+      "allow": ["$APPDATA/**", "$APPCONFIG/**"]
+    }
+  },
+  "shell": {
+    "scope": {
+      "sidecar": true,
+      "sidecar": {
+        "python": ["python"]
+      }
+    }
+  }
+}

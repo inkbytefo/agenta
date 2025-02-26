@@ -2,15 +2,9 @@ import json
 import sys
 import threading
 import logging
-from src.backend.agents.task_handler import handle_task
 from typing import Any, Dict, Optional
 from datetime import datetime
 from queue import Queue
-from src.backend.agents.mode_handler import get_mode
-from src.backend.agents.llm_status_handler import get_llm_status
-from src.backend.agents.debug_events_handler import get_debug_events
-from src.backend.agents.clear_debug_logs_handler import clear_debug_logs
-from src.backend.config.config_manager import init_config_manager, get_config_manager
 
 # Configure logging
 logging.basicConfig(
@@ -48,9 +42,6 @@ class Backend:
                 except json.JSONDecodeError as e:
                     logger.error(f"Failed to parse command: {e}")
                     self._send_error(f"Invalid JSON: {e}")
-                except Exception as e:
-                    logger.error(f"Error reading from stdin: {e}")
-                    break
             except Exception as e:
                 logger.error(f"Error reading from stdin: {e}")
                 break
@@ -69,15 +60,15 @@ class Backend:
                 args = command.get('args', {})
 
                 if cmd_type == 'handle_task':
-                    handle_task(args, self)
+                    self._handle_task(args)
                 elif cmd_type == 'get_mode':
-                    get_mode(self)
+                    self._get_mode()
                 elif cmd_type == 'get_llm_status':
-                    get_llm_status(self)
+                    self._get_llm_status()
                 elif cmd_type == 'get_debug_events':
-                    get_debug_events(self)
+                    self._get_debug_events()
                 elif cmd_type == 'clear_debug_logs':
-                    clear_debug_logs(self)
+                    self._clear_debug_logs()
                 elif cmd_type == 'get_llm_providers':
                     self._get_llm_providers()
                 elif cmd_type == 'get_llm_configs':
@@ -120,6 +111,39 @@ class Backend:
         )
 
     # Command handlers
+    def _handle_task(self, args: Dict):
+        """Handle a task command"""
+        task = args.get('task')
+        if not task:
+            return self._send_error("No task provided")
+
+        # TODO: Implement actual task handling
+        self._add_debug_event('info', f"Received task: {task}")
+        self._send_response({"status": "Task received"})
+
+    def _get_mode(self):
+        """Get current mode"""
+        self._send_response({
+            'mode': self.current_mode,
+            'status': 'success'
+        })
+
+    def _get_llm_status(self):
+        """Get LLM status"""
+        # TODO: Implement actual LLM status check
+        self._send_response({
+            'status': 'ready',
+            'provider': 'default'
+        })
+
+    def _get_debug_events(self):
+        """Get debug events"""
+        self._send_response(self.debug_events)
+
+    def _clear_debug_logs(self):
+        """Clear debug logs"""
+        self.debug_events.clear()
+        self._send_response()
 
     def _get_llm_providers(self):
         """Get available LLM providers"""
@@ -153,8 +177,6 @@ class Backend:
         self._send_response()
 
 if __name__ == '__main__':
-    config_dir = os.path.join(os.getcwd(), "src/backend/config")
-    init_config_manager(config_dir)
     backend = Backend()
     try:
         backend.start()

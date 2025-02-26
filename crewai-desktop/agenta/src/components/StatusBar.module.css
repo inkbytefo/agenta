@@ -1,0 +1,79 @@
+.status-bar {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0.5rem 1rem;
+  background-color: rgba(0, 0, 0, 0.2);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.9rem;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.connection-status {
+  composes: status-item;
+}
+
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.status-indicator.connected {
+  background-color: #4caf50;
+  box-shadow: 0 0 4px #4caf50;
+}
+
+.status-indicator.disconnected {
+  background-color: #f44336;
+  box-shadow: 0 0 4px #f44336;
+}
+
+.mode-status {
+  composes: status-item;
+}
+
+.mode-label {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.mode-value {
+  font-weight: 500;
+  color: #2196f3;
+}
+
+.llm-status {
+  composes: status-item;
+}
+
+.llm-label {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.llm-value {
+  font-weight: 500;
+}
+
+.llm-value.ready {
+  color: #4caf50;
+}
+
+.llm-value.error {
+  color: #f44336;
+}
+
+.llm-value.loading {
+  color: #ffc107;
+}
+
+.divider {
+  width: 1px;
+  height: 1rem;
+  background-color: rgba(255, 255, 255, 0.1);
+}

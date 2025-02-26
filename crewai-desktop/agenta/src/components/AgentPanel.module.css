@@ -1,0 +1,138 @@
+  .agentPanel {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1.5rem;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.panelHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 1rem;
+}
+
+.panelHeader h2 {
+    color: #333;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.connectionStatus {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.statusIndicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.statusIndicator.connected {
+    background-color: #4caf50; /* Green */
+}
+
+.statusIndicator.disconnected {
+    background-color: #f44336; /* Red */
+}
+
+.modeIndicator {
+    padding: 0.5rem;
+    background-color: #f0f0f0;
+    border-radius: 4px;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.modeName {
+    font-weight: bold;
+    color: #4a90e2;
+}
+
+.taskForm {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.inputGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.taskInput {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: #f9f9f9;
+    color: #333;
+    font-family: inherit;
+    resize: vertical;
+    transition: border-color 0.2s;
+}
+
+.taskInput:focus {
+    border-color: #4a90e2;
+    outline: none;
+}
+
+.taskInput:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.inputHelp {
+    font-size: 0.8rem;
+    color: #999;
+}
+
+.submitButton {
+    padding: 0.75rem 1.5rem;
+    background-color: #4a90e2;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    align-self: flex-start;
+}
+
+.submitButton:hover:not(:disabled) {
+    background-color: #357bd8;
+}
+
+.submitButton:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+.statusOutput {
+    padding: 1rem;
+    border-radius: 4px;
+    font-family: monospace;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: #333;
+}
+
+.statusOutput.success {
+    background-color: #dff0d8;
+    border: 1px solid #d0e9c6;
+}
+
+.statusOutput.error {
+    background-color: #f2dede;
+    border: 1px solid #ebccd1;
+}
