@@ -32,26 +32,22 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AgentPanel = void 0;
 const vscode = __importStar(require("vscode"));
-const ws_1 = __importDefault(require("ws"));
+const utils_1 = require("./utils");
 class AgentPanel {
     constructor(panel, extensionUri) {
         this._disposables = [];
         this._panel = panel;
-        this._extensionUri = extensionUri;
-        this._panel.webview.html = this._getWebviewContent();
-        this._connectToBackend();
         this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
-        this._panel.webview.onDidReceiveMessage((message) => {
-            switch (message.command) {
-                case 'sendTask':
-                    this._sendMessageToBackend(message.text);
-                    return;
+        this._panel.webview.html = this._getWebviewContent(this._panel.webview, extensionUri);
+        // Handle messages from the webview
+        this._panel.webview.onDidReceiveMessage(async (message) => {
+            switch (message.type) {
+                case 'task':
+                    this._handleTask(message);
+                    break;
             }
         }, null, this._disposables);
     }
@@ -63,146 +59,121 @@ class AgentPanel {
             AgentPanel.currentPanel._panel.reveal(column);
             return;
         }
-        const panel = vscode.window.createWebviewPanel(AgentPanel.viewType, 'CrewAI Agent', column || vscode.ViewColumn.One, {
+        const panel = vscode.window.createWebviewPanel('crewaiAgent', 'CrewAI Agent', column || vscode.ViewColumn.One, {
             enableScripts: true,
-            retainContextWhenHidden: true
+            retainContextWhenHidden: true,
+            localResourceRoots: [
+                vscode.Uri.joinPath(extensionUri, 'media')
+            ]
         });
         AgentPanel.currentPanel = new AgentPanel(panel, extensionUri);
     }
-    sendTaskToAgent(task) {
-        this._sendMessageToBackend(task);
+    static revive(panel, extensionUri) {
+        AgentPanel.currentPanel = new AgentPanel(panel, extensionUri);
     }
-    _connectToBackend() {
+    async sendTaskToAgent(task) {
+        const message = {
+            type: 'task',
+            content: task
+        };
+        await this._handleTask(message);
+    }
+    async _handleTask(message) {
         try {
-            const ws = new ws_1.default('ws://localhost:3000');
-            this._ws = ws;
-            ws.on('open', () => {
-                this._updateStatus('Connected to agent');
-            });
-            ws.on('message', (data) => {
-                try {
-                    const response = JSON.parse(data.toString());
-                    this._updateResponse(response);
-                }
-                catch (e) {
-                    console.error('Failed to parse message:', e);
-                }
-            });
-            ws.on('error', (error) => {
-                this._updateStatus(`Error: ${error.message}`);
-            });
-            ws.on('close', () => {
-                this._updateStatus('Disconnected from agent');
-            });
+            // Send task to backend
+            const response = await vscode.commands.executeCommand('crewai.sendMessage', message);
+            // Post response back to webview
+            switch (response.type) {
+                case 'agent_response':
+                    this._panel.webview.postMessage({
+                        type: 'status',
+                        content: `Task ${response.status}: ${response.content || response.error}`
+                    });
+                    break;
+                case 'error':
+                    this._panel.webview.postMessage({
+                        type: 'status',
+                        content: `Error: ${response.error}`
+                    });
+                    break;
+            }
         }
         catch (error) {
-            this._updateStatus(`Failed to connect: ${error}`);
+            this._panel.webview.postMessage({
+                type: 'status',
+                content: `Error: ${error}`
+            });
         }
     }
-    _sendMessageToBackend(text) {
-        if (this._ws?.readyState === 1) { // WebSocket.OPEN is 1
-            const message = {
-                type: 'task',
-                content: text,
-                timestamp: Date.now()
-            };
-            this._ws.send(JSON.stringify(message));
-        }
-        else {
-            this._updateStatus('Not connected to agent');
-        }
-    }
-    _updateStatus(text) {
-        const message = {
-            type: 'status',
-            text: text
-        };
-        this._panel.webview.postMessage(message);
-    }
-    _updateResponse(response) {
-        const message = {
-            type: 'response',
-            data: response
-        };
-        this._panel.webview.postMessage(message);
-    }
-    _getWebviewContent() {
+    _getWebviewContent(webview, extensionUri) {
+        const nonce = (0, utils_1.getNonce)();
         return `<!DOCTYPE html>
         <html lang="en">
         <head>
             <meta charset="UTF-8">
+            <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}';">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>CrewAI Agent</title>
             <style>
                 body {
                     padding: 20px;
+                    color: var(--vscode-foreground);
                     font-family: var(--vscode-font-family);
-                    color: var(--vscode-editor-foreground);
                 }
-                .container {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 20px;
-                }
-                #taskInput {
+                #task-input {
                     width: 100%;
-                    padding: 8px;
+                    padding: 10px;
+                    margin-bottom: 10px;
                     background: var(--vscode-input-background);
                     color: var(--vscode-input-foreground);
                     border: 1px solid var(--vscode-input-border);
                 }
-                #response {
-                    white-space: pre-wrap;
-                    padding: 10px;
-                    background: var(--vscode-editor-background);
-                    border: 1px solid var(--vscode-panel-border);
-                }
-                #status {
-                    color: var(--vscode-descriptionForeground);
-                }
-                button {
-                    padding: 8px 16px;
+                #submit-task {
+                    padding: 8px 12px;
                     background: var(--vscode-button-background);
                     color: var(--vscode-button-foreground);
                     border: none;
                     cursor: pointer;
                 }
-                button:hover {
+                #submit-task:hover {
                     background: var(--vscode-button-hoverBackground);
+                }
+                #status {
+                    margin-top: 20px;
+                    padding: 10px;
+                    white-space: pre-wrap;
+                    font-family: var(--vscode-editor-font-family);
                 }
             </style>
         </head>
         <body>
-            <div class="container">
-                <div>
-                    <input type="text" id="taskInput" placeholder="Enter your task here...">
-                    <button id="sendButton">Send Task</button>
-                </div>
-                <div id="status">Initializing...</div>
-                <pre id="response"></pre>
+            <div>
+                <textarea id="task-input" rows="3" placeholder="Enter your task..."></textarea>
+                <button id="submit-task">Submit Task</button>
             </div>
+            <div id="status"></div>
 
-            <script>
+            <script nonce="${nonce}">
                 const vscode = acquireVsCodeApi();
-                const taskInput = document.getElementById('taskInput');
-                const sendButton = document.getElementById('sendButton');
-                const statusElement = document.getElementById('status');
-                const responseElement = document.getElementById('response');
+                const taskInput = document.getElementById('task-input');
+                const submitButton = document.getElementById('submit-task');
+                const statusDiv = document.getElementById('status');
 
-                sendButton.addEventListener('click', () => {
-                    const text = taskInput.value;
-                    if (text) {
+                submitButton.addEventListener('click', () => {
+                    const task = taskInput.value.trim();
+                    if (task) {
                         vscode.postMessage({
-                            command: 'sendTask',
-                            text: text
+                            type: 'task',
+                            content: task
                         });
                         taskInput.value = '';
                     }
                 });
 
-                taskInput.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') {
-                        sendButton.click();
+                taskInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        submitButton.click();
                     }
                 });
 
@@ -210,10 +181,7 @@ class AgentPanel {
                     const message = event.data;
                     switch (message.type) {
                         case 'status':
-                            statusElement.textContent = message.text;
-                            break;
-                        case 'response':
-                            responseElement.textContent = JSON.stringify(message.data, null, 2);
+                            statusDiv.textContent = message.content;
                             break;
                     }
                 });
@@ -223,16 +191,14 @@ class AgentPanel {
     }
     dispose() {
         AgentPanel.currentPanel = undefined;
-        this._ws?.close();
+        this._panel.dispose();
         while (this._disposables.length) {
             const disposable = this._disposables.pop();
             if (disposable) {
                 disposable.dispose();
             }
         }
-        this._panel.dispose();
     }
 }
 exports.AgentPanel = AgentPanel;
-AgentPanel.viewType = 'crewAIAgent';
 //# sourceMappingURL=panel.js.map

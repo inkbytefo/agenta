@@ -1,0 +1,31 @@
+{
+  "name": "crewai-vscode-workspace",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CrewAI VSCode Extension Workspace",
+  "workspaces": [
+    "src/extension"
+  ],
+  "scripts": {
+    "dev:extension": "cd src/extension && npm run watch",
+    "dev:backend": "poetry run start",
+    "dev": "concurrently \"npm run dev:extension\" \"npm run dev:backend\"",
+    "build:extension": "cd src/extension && npm run vscode:prepublish",
+    "test:extension": "cd src/extension && npm run test",
+    "test:backend": "poetry run test",
+    "test": "npm run test:extension && npm run test:backend",
+    "lint:extension": "cd src/extension && npm run lint",
+    "lint:backend": "poetry run black src/backend && poetry run isort src/backend && poetry run pylint src/backend",
+    "lint": "npm run lint:extension && npm run lint:backend",
+    "clean": "rimraf src/extension/out src/extension/node_modules node_modules",
+    "install:all": "npm install && cd src/extension && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "rimraf": "^5.0.5"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  }
+}
